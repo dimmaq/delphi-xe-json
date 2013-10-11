@@ -24,7 +24,8 @@ uses
   TestJSONConvert in 'TestJSONConvert.pas',
   JSON.Convert in '..\JSON.Convert.pas',
   JSON.Classes in '..\JSON.Classes.pas',
-  TestReadableWriter in 'TestReadableWriter.pas';
+  TestReadableWriter in 'TestReadableWriter.pas',
+  JSON.Formatter in '..\JSON.Formatter.pas';
 
 {$R *.RES}
 
