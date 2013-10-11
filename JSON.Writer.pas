@@ -93,13 +93,12 @@ end;
 { TJSONWriterBase }
 
 function TJSONWriterBase.getEmptyString(aQuantity: integer): string;
-var
-  i: integer;
 begin
   result := '';
-  for i := 0 to aQuantity - 1 do
+  while aQuantity > 0 do
   begin
     result := result + ' ';
+    dec(aQuantity);
   end;
 end;
 
