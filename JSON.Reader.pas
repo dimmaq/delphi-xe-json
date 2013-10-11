@@ -221,7 +221,7 @@ end;
 
 function TJSONReader.isString(const aText: string): boolean;
 begin
-  if length(aText) > 0 then
+  if length(aText) > 1 then
     result := (aText[1] = '"') and (aText[length(aText)] = '"')
   else
     result := false;
