@@ -290,7 +290,7 @@ type
 implementation
 
 uses
-  JSON.Reader, JSON.Classes;
+  JSON.Reader;
 
 { TJSON }
 
