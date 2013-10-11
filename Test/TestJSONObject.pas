@@ -1,10 +1,10 @@
-ï»¿unit TestJSONObject;
+unit TestJSONObject;
 {
 
   Delphi DUnit-Testfall
   ----------------------
-  Diese Unit enthÃ¤lt ein Skeleton einer Testfallklasse, das vom Experten fÃ¼r TestfÃ¤lle erzeugt wurde.
-  Ã„ndern Sie den erzeugten Code so, dass er die Methoden korrekt einrichtet und aus der 
+  Diese Unit enthält ein Skeleton einer Testfallklasse, das vom Experten für Testfälle erzeugt wurde.
+  Ändern Sie den erzeugten Code so, dass er die Methoden korrekt einrichtet und aus der 
   getesteten Unit aufruft.
 
 }
@@ -15,7 +15,7 @@ uses
   TestFramework, SysUtils, Rtti, JSON;
 
 type
-  // Testmethoden fÃ¼r Klasse IJSONObject
+  // Testmethoden für Klasse IJSONObject
 
   TestIJSONObject = class(TTestCase)
   strict private
@@ -33,7 +33,7 @@ type
     procedure TestIsBoolean;
     procedure TestIsObject;
     procedure TestIsArray;
-    procedure Test;
+    procedure TestDeleteKey;
   end;
 
 implementation
@@ -48,7 +48,7 @@ begin
   FIJSONObject := nil;
 end;
 
-procedure TestIJSONObject.Test;
+procedure TestIJSONObject.TestDeleteKey;
 begin
   FIJSONObject.Put('key','value');
   FIJSONObject.Put('answer',42);
@@ -159,7 +159,7 @@ begin
 end;
 
 initialization
-  // Alle TestfÃ¤lle beim Testprogramm registrieren
+  // Alle Testfälle beim Testprogramm registrieren
   RegisterTest(TestIJSONObject.Suite);
 end.
 
