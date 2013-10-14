@@ -20,7 +20,6 @@ uses
 type
   TJSONFormatter = class(TInterfacedObject, IJSONFormatter)
   private
-    fPosition: integer;
     fLevel: integer;
     fInput: string;
     fOutput: TStringList;
@@ -84,9 +83,8 @@ end;
 
 procedure TJSONFormatter.Indent;
 var
-  l, level: integer;
+  l: integer;
 begin
-  level := 0;
   for l := 0 to fOutput.Count - 1 do
   begin
     case fOutput[l][1] of
