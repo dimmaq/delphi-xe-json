@@ -8,10 +8,13 @@ type
     function FormatJSON(const aInput: string): string;
   end;
 
+function getJSONFormatter: IJSONFormatter;
+
 implementation
 
 uses
   Classes,
+  Math,
   SysUtils;
 
 type
@@ -21,21 +24,25 @@ type
     fLevel: integer;
     fInput: string;
     fOutput: TStringList;
-    function NextChar: Char;
-    function PrevChar: Char;
 
     procedure RemoveWhiteSpace;
-    procedure Indent(aStringBuilder: TStringBuilder); overload;
-
     procedure InsertLineBreaks;
-    procedure Indent; overload;
+    procedure RemoveEmptyLines;
+    procedure Indent;
+
+    function getSpaces(aCount: integer): string;
   public
     constructor Create;
     destructor Destroy; override;
     function FormatJSON(const aInput: string): string;
   end;
 
-  { TJSONFormatter }
+function getJSONFormatter: IJSONFormatter;
+begin
+  result := TJSONFormatter.Create;
+end;
+
+{ TJSONFormatter }
 
 constructor TJSONFormatter.Create;
 begin
@@ -54,27 +61,25 @@ begin
 
   RemoveWhiteSpace;
   InsertLineBreaks;
-
   fOutput.Text := fInput;
+  RemoveEmptyLines;
 
   Indent;
 
-  result := fInput;
+  result := fOutput.Text;
 end;
 
-procedure TJSONFormatter.Indent(aStringBuilder: TStringBuilder);
+function TJSONFormatter.getSpaces(aCount: integer): string;
 var
-  s: string;
   i: integer;
 begin
-  s := '';
+  result := '';
   i := fLevel * 2;
   while i > 0 do
   begin
-    s := s + ' ';
+    result := result + ' ';
     dec(i);
   end;
-  aStringBuilder.Append(s);
 end;
 
 procedure TJSONFormatter.Indent;
@@ -85,7 +90,19 @@ begin
   for l := 0 to fOutput.Count - 1 do
   begin
     case fOutput[l][1] of
-      '{' : ;
+      '{', '[':
+        begin
+          fOutput[l] := getSpaces(fLevel * 2) + fOutput[l];
+          inc(fLevel);
+        end;
+      '}', ']':
+        begin
+          dec(fLevel);
+          fOutput[l] := getSpaces(fLevel * 2) + fOutput[l];
+          fLevel := max(fLevel, 0);
+        end
+    else
+      fOutput[l] := getSpaces(fLevel * 2) + fOutput[l];
     end;
   end;
 end;
@@ -94,38 +111,77 @@ procedure TJSONFormatter.InsertLineBreaks;
 var
   i: integer;
   insideString: boolean;
+  s: string;
 begin
+  s := '';
   i := 1;
   insideString := false;
-  while i < length(fInput) do
+  while i <= length(fInput) do
   begin
-    case fInput[i] of
-      '\':
-        inc(i, 2);
-      '"':
+    if insideString then
+    begin
+      s := s + fInput[i];
+      if (fInput[i] = '"') and (fInput[i - 1] <> '\') then
+        insideString := false;
+      inc(i);
+    end
+    else
+    begin
+      case fInput[i] of
+        '\':
+          begin
+            s := s + fInput[i] + fInput[i + 1];
+            inc(i, 2);
+          end;
+        '"':
+          begin
+            s := s + fInput[i];
+            insideString := not insideString;
+            inc(i);
+          end;
+        '{', '[':
+          begin
+            s := s + sLineBreak + fInput[i] + sLineBreak;
+            inc(i);
+          end;
+        '}', ']':
+          begin
+            if (length(fInput) > i) and (fInput[i + 1] = ',') then
+            begin
+              s := s + sLineBreak + fInput[i] + ',' + sLineBreak;
+              inc(i,2);
+            end
+            else
+            begin
+              s := s + sLineBreak + fInput[i] + sLineBreak;
+              inc(i);
+            end;
+          end;
+        ',':
+          begin
+            s := s + fInput[i] + sLineBreak;
+            inc(i);
+          end
+      else
         begin
-          insideString := not insideString;
+          s := s + fInput[i];
           inc(i);
         end;
-      '{', '}', '[', ']', ',':
-        begin
-          insert(sLineBreak, fInput, i + 1);
-          inc(i);
-        end;
+      end;
     end;
   end;
+  fInput := s;
 end;
 
-function TJSONFormatter.NextChar: Char;
+procedure TJSONFormatter.RemoveEmptyLines;
+var
+  i: integer;
 begin
-  if (fPosition >= 1) and (fPosition <= length(fInput)) then
-    result := fInput[fPosition + 1];
-end;
-
-function TJSONFormatter.PrevChar: Char;
-begin
-  if (fPosition >= 1) and (fPosition <= length(fInput)) then
-    result := fInput[fPosition - 1];
+  for i := fOutput.Count - 1 downto 0 do
+  begin
+    if fOutput[i] = '' then
+      fOutput.Delete(i);
+  end;
 end;
 
 procedure TJSONFormatter.RemoveWhiteSpace;
@@ -149,7 +205,7 @@ begin
       inc(i);
     end
     else if not insideString and CharInSet(fInput[i], whitespace) then
-      delete(fInput, i, 1)
+      Delete(fInput, i, 1)
     else
       inc(i);
   end;
