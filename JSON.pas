@@ -283,6 +283,11 @@ type
     ///  <param name="aText">the Text that will be parsed</param>
     ///  <exception cref="JSONException">raised when invalid text is parsed</exception>
     class function NewArray(const aText : string = '') : IJSONArray;
+    /// <summary>
+    ///   Formats <paramref name="aText"/> to be human-readable without parsing it.
+    /// </summary>
+    ///  <param name="aText">the Text that will be formatted</param>
+    class function FormatJSON(const aText : string) : string;
   end;
 
   JSONException = class (Exception);
@@ -290,9 +295,17 @@ type
 implementation
 
 uses
-  JSON.Reader;
+  JSON.Reader, JSON.Formatter;
 
 { TJSON }
+
+class function TJSON.FormatJSON(const aText: string): string;
+var
+  formatter : IJSONFormatter;
+begin
+  formatter := getJSONFormatter;
+  result := formatter.FormatJSON(aText);
+end;
 
 class function TJSON.NewArray(const aText: string): IJSONArray;
 var
