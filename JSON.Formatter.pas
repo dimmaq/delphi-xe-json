@@ -20,7 +20,6 @@ uses
 type
   TJSONFormatter = class(TInterfacedObject, IJSONFormatter)
   private
-    fLevel: integer;
     function RemoveWhiteSpace(const aInput: string): string;
     function InsertLineBreaks(const aInput: string): string;
     function RemoveEmptyLines(const aInput: string): string;
@@ -50,15 +49,12 @@ begin
 end;
 
 function TJSONFormatter.getSpaces(aCount: integer): string;
-var
-  i: integer;
 begin
   result := '';
-  i := fLevel * 2;
-  while i > 0 do
+  while aCount > 0 do
   begin
     result := result + ' ';
-    dec(i);
+    dec(aCount);
   end;
 end;
 
@@ -66,7 +62,9 @@ function TJSONFormatter.Indent(const aInput: string): string;
 var
   sl: TStringList;
   i: integer;
+  lvl : integer;
 begin
+  lvl := 0;
   sl := TStringList.Create;
   try
     sl.Text := aInput;
@@ -76,31 +74,31 @@ begin
         '{':
           begin
             if sl[i][2] = '}' then
-              sl[i] := getSpaces(fLevel * 2) + sl[i]
+              sl[i] := getSpaces(lvl * 2) + sl[i]
             else
             begin
-              sl[i] := getSpaces(fLevel * 2) + sl[i];
-              inc(fLevel);
+              sl[i] := getSpaces(lvl * 2) + sl[i];
+              inc(lvl);
             end;
           end;
         '[':
           begin
             if sl[i][2] = ']' then
-              sl[i] := getSpaces(fLevel * 2) + sl[i]
+              sl[i] := getSpaces(lvl * 2) + sl[i]
             else
             begin
-              sl[i] := getSpaces(fLevel * 2) + sl[i];
-              inc(fLevel);
+              sl[i] := getSpaces(lvl * 2) + sl[i];
+              inc(lvl);
             end;
           end;
         '}', ']':
           begin
-            dec(fLevel);
-            sl[i] := getSpaces(fLevel * 2) + sl[i];
-            fLevel := max(fLevel, 0);
+            dec(lvl);
+            lvl := max(lvl, 0);
+            sl[i] := getSpaces(lvl * 2) + sl[i];
           end
       else
-        sl[i] := getSpaces(fLevel * 2) + sl[i];
+        sl[i] := getSpaces(lvl * 2) + sl[i];
       end;
     end;
     result := sl.Text;
