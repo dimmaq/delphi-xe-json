@@ -211,7 +211,7 @@ var
   sb: TStringBuilder;
   sIndent: string;
 begin
-  if aArray.Count <> 0 then
+  if aArray.Count > 0 then
   begin
     sb := TStringBuilder.Create;
     sIndent := getEmptyString(fLevel * 2);
@@ -247,9 +247,7 @@ var
   s, sIndent: string;
   isFirstElement: boolean;
 begin
-  if aObject.Count = 0 then
-    result := '{}'
-  else
+  if aObject.Count > 0 then
   begin
     sb := TStringBuilder.Create;
 
@@ -286,7 +284,9 @@ begin
     result := sb.ToString;
 
     sb.Free;
-  end;
+  end
+  else
+    result := '{}'
 end;
 
 function TReadableJSONWriter.writePair(aKey: string; aValue: TValue): string;
