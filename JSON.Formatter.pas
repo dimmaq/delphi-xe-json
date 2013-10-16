@@ -73,10 +73,25 @@ begin
     for i := 0 to sl.Count - 1 do
     begin
       case sl[i][1] of
-        '{', '[':
+        '{':
           begin
-            sl[i] := getSpaces(fLevel * 2) + sl[i];
-            inc(fLevel);
+            if sl[i][2] = '}' then
+              sl[i] := getSpaces(fLevel * 2) + sl[i]
+            else
+            begin
+              sl[i] := getSpaces(fLevel * 2) + sl[i];
+              inc(fLevel);
+            end;
+          end;
+        '[':
+          begin
+            if sl[i][2] = ']' then
+              sl[i] := getSpaces(fLevel * 2) + sl[i]
+            else
+            begin
+              sl[i] := getSpaces(fLevel * 2) + sl[i];
+              inc(fLevel);
+            end;
           end;
         '}', ']':
           begin
@@ -126,10 +141,31 @@ begin
             insideString := not insideString;
             inc(i);
           end;
-        '{', '[':
+        '{':
           begin
-            s := s + sLineBreak + aInput[i] + sLineBreak;
-            inc(i);
+            if aInput[i + 1] = '}' then
+            begin
+              s := s + '{}';
+              inc(i, 2);
+            end
+            else
+            begin
+              s := s + sLineBreak + aInput[i] + sLineBreak;
+              inc(i);
+            end;
+          end;
+        '[':
+          begin
+            if aInput[i + 1] = ']' then
+            begin
+              s := s + '[]';
+              inc(i, 2);
+            end
+            else
+            begin
+              s := s + sLineBreak + aInput[i] + sLineBreak;
+              inc(i);
+            end;
           end;
         '}', ']':
           begin
@@ -148,7 +184,7 @@ begin
           begin
             s := s + aInput[i] + sLineBreak;
             inc(i);
-          end
+          end;
       else
         begin
           s := s + aInput[i];
