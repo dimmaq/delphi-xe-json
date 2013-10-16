@@ -86,6 +86,7 @@ var
   keys : TArray<string>;
 begin
   result := '{';
+  keys := aObject.GetKeys;
   for i := 0 to high(keys) do
   begin
     if i > 0 then result := result + ',';
