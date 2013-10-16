@@ -30,7 +30,6 @@ type
     function escapeString(s: string): string;
     function writeValue(aValue: TValue): string;
     function writePair(aKey: string; aValue: TValue): string; virtual;
-    function getEmptyString(aQuantity: integer): string;
   public
     function writeObject(aObject: IJSONObject; aIndent: integer = 0): string; virtual; abstract;
     function writeArray(aArray: IJSONArray; aIndent: integer = 0): string; virtual; abstract;
@@ -46,6 +45,7 @@ type
   private
     fLevel: integer;
     function shouldBeNested(aValue: TValue): boolean;
+    function getEmptyString(aQuantity: integer): string;
   protected
     function writePair(aKey: string; aValue: TValue): string; override;
   public
@@ -82,29 +82,19 @@ end;
 
 function TJSONWriter.writeObject(aObject: IJSONObject; aIndent: integer = 0): string;
 var
-  key: string;
+  i : integer;
+  keys : TArray<string>;
 begin
   result := '{';
-  for key in aObject.GetKeys do
+  for i := 0 to high(keys) do
   begin
-    result := result + writePair(key, aObject.GetValue(key)) + ',';
+    if i > 0 then result := result + ',';
+    result := result + writePair(keys[i], aObject.GetValue(keys[i]));
   end;
-  if length(key) > 1 then
-    delete(result, length(result), 1);
   result := result + '}';
 end;
 
 { TJSONWriterBase }
-
-function TJSONWriterBase.getEmptyString(aQuantity: integer): string;
-begin
-  result := '';
-  while aQuantity > 0 do
-  begin
-    result := result + ' ';
-    dec(aQuantity);
-  end;
-end;
 
 function TJSONWriterBase.escapeString(s: string): string;
 const
@@ -189,6 +179,16 @@ end;
 constructor TReadableJSONWriter.Create;
 begin
   fLevel := 0;
+end;
+
+function TReadableJSONWriter.getEmptyString(aQuantity: integer): string;
+begin
+  result := '';
+  while aQuantity > 0 do
+  begin
+    result := result + ' ';
+    dec(aQuantity);
+  end;
 end;
 
 function TReadableJSONWriter.shouldBeNested(aValue: TValue): boolean;
