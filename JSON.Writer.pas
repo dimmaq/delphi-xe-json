@@ -17,7 +17,9 @@ function getReadableJSONWriter: IJSONWriter;
 implementation
 
 uses
-  System.Rtti, System.TypInfo, System.SysUtils;
+  System.Rtti,
+  System.TypInfo,
+  System.SysUtils;
 
 const
   CrLf = #13#10;
@@ -43,7 +45,7 @@ type
   TReadableJSONWriter = class(TJSONWriterBase)
   private
     fLevel: integer;
-    function shouldBeNested(aValue : TValue) : boolean;
+    function shouldBeNested(aValue: TValue): boolean;
   protected
     function writePair(aKey: string; aValue: TValue): string; override;
   public
@@ -71,7 +73,8 @@ begin
   result := '[';
   for i := 0 to aArray.Count - 1 do
   begin
-    if i > 0 then result := result + ',';
+    if i > 0 then
+      result := result + ',';
     result := result + writeValue(aArray.GetValue(i));
   end;
   result := result + ']';
@@ -79,14 +82,15 @@ end;
 
 function TJSONWriter.writeObject(aObject: IJSONObject; aIndent: integer = 0): string;
 var
-  s: string;
+  key: string;
 begin
   result := '{';
-  for s in aObject.GetKeys do
+  for key in aObject.GetKeys do
   begin
-    result := result + writePair(s, aObject.GetValue(s)) + ',';
+    result := result + writePair(key, aObject.GetValue(key)) + ',';
   end;
-  if length(s) > 1 then delete(result, length(result), 1);
+  if length(key) > 1 then
+    delete(result, length(result), 1);
   result := result + '}';
 end;
 
@@ -107,7 +111,7 @@ const
   NoConversion = ['A' .. 'Z', 'a' .. 'z', '*', '@', '.', '_', '-', '0' .. '9', '$', '!', '''', '(', ')', ' '];
 var
   hex: string;
-  ch : char;
+  ch: char;
   sb: TStringBuilder;
 begin
   sb := TStringBuilder.Create;
@@ -155,15 +159,23 @@ begin
   fs := TFormatSettings.Create('en-US');
   fs.DecimalSeparator := '.';
   case aValue.Kind of
-    tkEnumeration: if aValue.AsBoolean then result := 'true'
-      else result := 'false';
-    tkChar, tkString, tkWChar, tkLString, tkWString, tkUString: result := '"' + escapeString(aValue.ToString) + '"';
-    tkInteger, tkInt64: result := IntToStr(aValue.AsInteger);
-    tkFloat: result := FloatToStr(aValue.AsExtended, fs);
+    tkEnumeration:
+      if aValue.AsBoolean then
+        result := 'true'
+      else
+        result := 'false';
+    tkChar, tkString, tkWChar, tkLString, tkWString, tkUString:
+      result := '"' + escapeString(aValue.ToString) + '"';
+    tkInteger, tkInt64:
+      result := IntToStr(aValue.AsInteger);
+    tkFloat:
+      result := FloatToStr(aValue.AsExtended, fs);
     tkInterface:
       begin
-        if aValue.TypeInfo.Name = 'IJSONObject' then result := writeObject(aValue.AsType<IJSONObject>)
-        else if aValue.TypeInfo.Name = 'IJSONArray' then result := writeArray(aValue.AsType<IJSONArray>);
+        if aValue.TypeInfo.Name = 'IJSONObject' then
+          result := writeObject(aValue.AsType<IJSONObject>)
+        else if aValue.TypeInfo.Name = 'IJSONArray' then
+          result := writeArray(aValue.AsType<IJSONArray>);
       end
   else
     begin
@@ -185,12 +197,12 @@ begin
   begin
     result := aValue.AsType<IJSONObject>.Count > 0;
   end
-  else
-  if aValue.IsType<IJSONArray> then
+  else if aValue.IsType<IJSONArray> then
   begin
     result := aValue.AsType<IJSONArray>.Count > 0;
   end
-  else result := false;
+  else
+    result := false;
 end;
 
 function TReadableJSONWriter.writeArray(aArray: IJSONArray; aIndent: integer): string;
@@ -199,8 +211,7 @@ var
   sb: TStringBuilder;
   sIndent: string;
 begin
-  if aArray.Count = 0 then result := '[]'
-  else
+  if aArray.Count <> 0 then
   begin
     sb := TStringBuilder.Create;
     sIndent := getEmptyString(fLevel * 2);
@@ -213,7 +224,8 @@ begin
     begin
       sb.Append(sIndent);
       sb.Append(writeValue(aArray.GetValue(i)));
-      if i < aArray.Count-1 then sb.Append(',');
+      if i < aArray.Count - 1 then
+        sb.Append(',');
       sb.AppendLine;
     end;
 
@@ -224,7 +236,9 @@ begin
 
     result := sb.ToString;
     sb.Free;
-  end;
+  end
+  else
+    result := '[]'
 end;
 
 function TReadableJSONWriter.writeObject(aObject: IJSONObject; aIndent: integer): string;
@@ -233,7 +247,8 @@ var
   s, sIndent: string;
   isFirstElement: boolean;
 begin
-  if aObject.Count = 0 then result := '{}'
+  if aObject.Count = 0 then
+    result := '{}'
   else
   begin
     sb := TStringBuilder.Create;
@@ -288,7 +303,8 @@ begin
     result := sb.ToString;
     sb.Free;
   end
-  else result := inherited;
+  else
+    result := inherited;
 end;
 
 end.
