@@ -156,8 +156,10 @@ begin
         result := 'false';
     tkChar, tkString, tkWChar, tkLString, tkWString, tkUString:
       result := '"' + escapeString(aValue.ToString) + '"';
-    tkInteger, tkInt64:
+    tkInteger:
       result := IntToStr(aValue.AsInteger);
+    tkInt64:
+      result := IntToStr(aValue.AsInt64);
     tkFloat:
       result := FloatToStr(aValue.AsExtended, fs);
     tkInterface:
