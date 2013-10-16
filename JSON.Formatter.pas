@@ -62,7 +62,7 @@ function TJSONFormatter.Indent(const aInput: string): string;
 var
   sl: TStringList;
   i: integer;
-  lvl : integer;
+  lvl: integer;
 begin
   lvl := 0;
   sl := TStringList.Create;
@@ -73,23 +73,15 @@ begin
       case sl[i][1] of
         '{':
           begin
-            if sl[i][2] = '}' then
-              sl[i] := getSpaces(lvl * 2) + sl[i]
-            else
-            begin
-              sl[i] := getSpaces(lvl * 2) + sl[i];
+            sl[i] := getSpaces(lvl * 2) + sl[i];
+            if sl[i][2] <> '}' then
               inc(lvl);
-            end;
           end;
         '[':
           begin
-            if sl[i][2] = ']' then
-              sl[i] := getSpaces(lvl * 2) + sl[i]
-            else
-            begin
-              sl[i] := getSpaces(lvl * 2) + sl[i];
+            sl[i] := getSpaces(lvl * 2) + sl[i];
+            if sl[i][2] <> ']' then
               inc(lvl);
-            end;
           end;
         '}', ']':
           begin
@@ -121,7 +113,12 @@ begin
     if insideString then
     begin
       s := s + aInput[i];
-      if (aInput[i] = '"') and (aInput[i - 1] <> '\') then
+      if aInput[i] = '\' then
+      begin
+        s := s + aInput[i + 1];
+        inc(i, 2);
+      end;
+      if aInput[i] = '"' then
         insideString := false;
       inc(i);
     end
