@@ -125,7 +125,6 @@ function TPODOGenerator.JSONArrayToClasses(ja: IJSONArray; const aClassName: str
 var
   lClasses: TListOfGeneratableClass;
   lClass: TGeneratableClass;
-  lLoadMethod, lSaveMethod: TGeneratableMethod;
   lLoadJSONMethod, lSaveJSONMethod: TGeneratableMethod;
 begin
   result := TListOfGeneratableClass.Create;
@@ -199,7 +198,7 @@ begin
       lLoadJSONMethod.BodyText.Add('    item := ' + aClassName + 'Item.Create;');
       lLoadJSONMethod.BodyText.Add('    item.LoadFromJSON(ja.GetJSONObject(i));');
       lLoadJSONMethod.BodyText.Add('    Add(item);');
-      lSaveMethod.LocalVars.AddOrSetValue('joItem', 'IJSONObject');
+      lSaveJSONMethod.LocalVars.AddOrSetValue('joItem', 'IJSONObject');
       lSaveJSONMethod.BodyText.Add('    joItem := TJSON.NewObject;');
       lSaveJSONMethod.BodyText.Add('    item.SaveToJSON(joItem);');
       lSaveJSONMethod.BodyText.Add('    ja.Put(joItem);');
@@ -210,15 +209,14 @@ begin
       lLoadJSONMethod.BodyText.Add('    item := ' + aClassName + 'Item.Create;');
       lLoadJSONMethod.BodyText.Add('    item.LoadFromJSON(ja.GetJSONObject(i));');
       lLoadJSONMethod.BodyText.Add('    Add(item);');
-      lSaveMethod.LocalVars.AddOrSetValue('jaItem', 'IJSONArray');
+      lSaveJSONMethod.LocalVars.AddOrSetValue('jaItem', 'IJSONArray');
       lSaveJSONMethod.BodyText.Add('    jaItem := TJSON.NewArray;');
-      lSaveJSONMethod.BodyText.Add('    item.SaveToJSON(jaItem);');
+      lSaveJSONMethod.BodyText.Add('    Items[i].SaveToJSON(jaItem);');
       lSaveJSONMethod.BodyText.Add('    ja.Put(jaItem);');
     end;
 
     lLoadJSONMethod.BodyText.Add('  end;');
     lSaveJSONMethod.BodyText.Add('  end;');
-
     result.Add(lClass);
   end;
 end;
@@ -301,7 +299,7 @@ begin
 
         lSaveJSONMethod.LocalVars.AddOrSetValue('ja' + key, 'IJSONArray');
         lSaveJSONMethod.BodyText.Add('  ja' + key + ' := TJSON.NewArray;');
-        lSaveJSONMethod.BodyText.Add('  f' + key + '.SaveToJSON(ja' + key + ')');
+        lSaveJSONMethod.BodyText.Add('  f' + key + '.SaveToJSON(ja' + key + ');');
         lSaveJSONMethod.BodyText.Add('  jo.Put(''' + key + ''', ja' + key + ');');
 
         lClasses := JSONArrayToClasses(ja, 'T' + key + 'List');
