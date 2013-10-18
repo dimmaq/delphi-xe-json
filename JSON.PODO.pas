@@ -19,7 +19,7 @@ type
     procedure AddSaveToFileMethod(aClass: TGeneratableClass);
 
     function JSONObjectToClasses(jo: IJSONObject; aClassName: string = 'TGeneratedClass'): TListOfGeneratableClass;
-    function JSONArrayToClasses(ja: IJSONArray; aClassName: string = 'TGeneratedClass'): TListOfGeneratableClass;
+    function JSONArrayToClasses(ja: IJSONArray; const aClassName: string = 'TGeneratedClass'): TListOfGeneratableClass;
   public
     function JSONToPODO(jo: IJSONObject): string;
   end;
@@ -89,54 +89,68 @@ begin
   m.BodyText.Add('  TFile.WriteAllText(aFilename, jo.ToString);');
 end;
 
-function TCodeGen.JSONArrayToClasses(ja: IJSONArray; aClassName: string): TListOfGeneratableClass;
+function TCodeGen.JSONArrayToClasses(ja: IJSONArray; const aClassName: string): TListOfGeneratableClass;
 var
   lClasses: TListOfGeneratableClass;
   lClass: TGeneratableClass;
   lLoadMethod, lSaveMethod: TGeneratableMethod;
   lLoadJSONMethod, lSaveJSONMethod: TGeneratableMethod;
   lConstructor, lDestructor: TGeneratableMethod;
-  i: Integer;
+
 begin
   result := TListOfGeneratableClass.Create;
-
-  lClass := TGeneratableClass.Create(nil, aClassName, 'TList<'+'>', true); //TODO: Add Param for ItemClassName
-
-  lClass.InterfaceUnits.Add('Generics.Collections');
-  lClass.InterfaceUnits.Add('JSON');
-  lClass.ImplementationUnits.Add('IOUtils');
-
-  lConstructor := TGeneratableMethod.Create(lClass, 'Create', vPublic);
-  lConstructor.MethodKind := mkConstructor;
-  lDestructor := TGeneratableMethod.Create(lClass, 'Destroy', vPublic, bkOverride);
-  lDestructor.MethodKind := mkDestructor;
-
-  lLoadMethod := TGeneratableMethod.Create(lClass, 'LoadFromFile', vPublic);
-  lLoadMethod.Parameters := 'aFilename : string';
-  lLoadMethod.LocalVars.Add('s', 'string');
-  lLoadMethod.LocalVars.Add('ja', 'IJSONArray');
-  lLoadMethod.BodyText.Add('  s := TFile.ReadAllText(aFilename);');
-  lLoadMethod.BodyText.Add('  ja := TJSON.NewArray(s);');
-  lLoadMethod.BodyText.Add('  LoadFromJSON(ja);');
-
-  lSaveMethod := TGeneratableMethod.Create(lClass, 'SaveToFile', vPublic);
-  lSaveMethod.Parameters := 'aFilename : string';
-  lSaveMethod.LocalVars.Add('ja', 'IJSONArray');
-  lSaveMethod.BodyText.Add('  ja := TJSON.NewArray;');
-  lSaveMethod.BodyText.Add('  SaveToJSON(ja);');
-  lSaveMethod.BodyText.Add('  TFile.WriteAllText(aFilename, ja.ToString);');
-
-  lLoadJSONMethod := TGeneratableMethod.Create(lClass, 'LoadFromJSON', vPublic);
-  lLoadJSONMethod.Parameters := 'ja : IJSONArray';
-  lSaveJSONMethod := TGeneratableMethod.Create(lClass, 'SaveToJSON', vPublic);
-  lSaveJSONMethod.Parameters := 'ja : IJSONArray';
-
   // TODO: Get type of first element
+  lClass := nil;
+  if ja.Count > 0 then
+  begin
+    if ja.isString(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<string>', true)
+    else if ja.isInteger(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<integer>', true)
+    else if ja.isBoolean(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<boolean>', true)
+    else if ja.isDouble(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<double>', true)
+    else if ja.isJSONObject(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<T' + '>', true)
+    else if ja.isJSONArray(0) then
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<TList<' + '>>', true);
+  end;
 
+  if assigned(lClass) then
+  begin
+    lClass.InterfaceUnits.Add('Generics.Collections');
+    lClass.InterfaceUnits.Add('JSON');
+    lClass.ImplementationUnits.Add('IOUtils');
 
+    lConstructor := TGeneratableMethod.Create(lClass, 'Create', vPublic);
+    lConstructor.MethodKind := mkConstructor;
+    lDestructor := TGeneratableMethod.Create(lClass, 'Destroy', vPublic, bkOverride);
+    lDestructor.MethodKind := mkDestructor;
 
-  lDestructor.BodyText.Add('  inherited;');
-  result.Add(lClass);
+    lLoadMethod := TGeneratableMethod.Create(lClass, 'LoadFromFile', vPublic);
+    lLoadMethod.Parameters := 'aFilename : string';
+    lLoadMethod.LocalVars.Add('s', 'string');
+    lLoadMethod.LocalVars.Add('ja', 'IJSONArray');
+    lLoadMethod.BodyText.Add('  s := TFile.ReadAllText(aFilename);');
+    lLoadMethod.BodyText.Add('  ja := TJSON.NewArray(s);');
+    lLoadMethod.BodyText.Add('  LoadFromJSON(ja);');
+
+    lSaveMethod := TGeneratableMethod.Create(lClass, 'SaveToFile', vPublic);
+    lSaveMethod.Parameters := 'aFilename : string';
+    lSaveMethod.LocalVars.Add('ja', 'IJSONArray');
+    lSaveMethod.BodyText.Add('  ja := TJSON.NewArray;');
+    lSaveMethod.BodyText.Add('  SaveToJSON(ja);');
+    lSaveMethod.BodyText.Add('  TFile.WriteAllText(aFilename, ja.ToString);');
+
+    lLoadJSONMethod := TGeneratableMethod.Create(lClass, 'LoadFromJSON', vPublic);
+    lLoadJSONMethod.Parameters := 'ja : IJSONArray';
+    lSaveJSONMethod := TGeneratableMethod.Create(lClass, 'SaveToJSON', vPublic);
+    lSaveJSONMethod.Parameters := 'ja : IJSONArray';
+
+    lDestructor.BodyText.Add('  inherited;');
+    result.Add(lClass);
+  end;
 end;
 
 function TCodeGen.JSONObjectToClasses(jo: IJSONObject; aClassName: string): TListOfGeneratableClass;
@@ -210,7 +224,7 @@ begin
       ja := jo.GetJSONArray(key);
       if ja.Count > 0 then
       begin
-        AddLifecycleForField(key, 'T' + key, lConstructor, lDestructor);
+        AddLifecycleForField(key, 'T' + key + 'List', lConstructor, lDestructor);
         AddReadOnlyPropertyToClass(lClass, key, 'T' + key + 'List');
 
         lLoadJSONMethod.BodyText.Add('  f' + key + '.LoadFromJSON(jo.GetJSONArray(''' + key + '''));');
