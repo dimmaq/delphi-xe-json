@@ -34,7 +34,7 @@ uses
 
 procedure TCodeGen.AddLifecycleForField(const aName, aType: string; aConstructor, aDestructor: TGeneratableMethod);
 begin
-  aConstructor.BodyText.Add('  f' + aName + ' := T' + aName + '.Create;');
+  aConstructor.BodyText.Add('  f' + aName + ' := ' + aType + '.Create;');
   aDestructor.BodyText.Add('  f' + aName + '.Free;');
 end;
 
@@ -95,11 +95,8 @@ var
   lClass: TGeneratableClass;
   lLoadMethod, lSaveMethod: TGeneratableMethod;
   lLoadJSONMethod, lSaveJSONMethod: TGeneratableMethod;
-  lConstructor, lDestructor: TGeneratableMethod;
-
 begin
   result := TListOfGeneratableClass.Create;
-  // TODO: Get type of first element
   lClass := nil;
   if ja.Count > 0 then
   begin
@@ -112,9 +109,19 @@ begin
     else if ja.isDouble(0) then
       lClass := TGeneratableClass.Create(nil, aClassName, 'TList<double>', true)
     else if ja.isJSONObject(0) then
-      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<T' + '>', true)
+    begin
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<' + aClassName + 'Item>', true);
+      lClasses := JSONObjectToClasses(ja.GetJSONObject(0), aClassName + 'Item');
+      result.AddRange(lClasses);
+      lClasses.Free;
+    end
     else if ja.isJSONArray(0) then
-      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<TList<' + '>>', true);
+    begin
+      lClass := TGeneratableClass.Create(nil, aClassName, 'TList<' + aClassName + 'Item>', true);
+      lClasses := JSONArrayToClasses(ja.GetJSONArray(0), aClassName + 'Item');
+      result.AddRange(lClasses);
+      lClasses.Free;
+    end;
   end;
 
   if assigned(lClass) then
@@ -122,11 +129,6 @@ begin
     lClass.InterfaceUnits.Add('Generics.Collections');
     lClass.InterfaceUnits.Add('JSON');
     lClass.ImplementationUnits.Add('IOUtils');
-
-    lConstructor := TGeneratableMethod.Create(lClass, 'Create', vPublic);
-    lConstructor.MethodKind := mkConstructor;
-    lDestructor := TGeneratableMethod.Create(lClass, 'Destroy', vPublic, bkOverride);
-    lDestructor.MethodKind := mkDestructor;
 
     lLoadMethod := TGeneratableMethod.Create(lClass, 'LoadFromFile', vPublic);
     lLoadMethod.Parameters := 'aFilename : string';
@@ -145,10 +147,62 @@ begin
 
     lLoadJSONMethod := TGeneratableMethod.Create(lClass, 'LoadFromJSON', vPublic);
     lLoadJSONMethod.Parameters := 'ja : IJSONArray';
+    lLoadJSONMethod.LocalVars.Add('i', 'integer');
+    lLoadJSONMethod.BodyText.Add('  for i := 0 to ja.Count - 1 do');
+    lLoadJSONMethod.BodyText.Add('  begin');
+
     lSaveJSONMethod := TGeneratableMethod.Create(lClass, 'SaveToJSON', vPublic);
     lSaveJSONMethod.Parameters := 'ja : IJSONArray';
+    lSaveJSONMethod.LocalVars.Add('i', 'integer');
+    lSaveJSONMethod.BodyText.Add('  for i := 0 to ja.Count - 1 do');
+    lSaveJSONMethod.BodyText.Add('  begin');
 
-    lDestructor.BodyText.Add('  inherited;');
+    if ja.isString(0) then
+    begin
+      lLoadJSONMethod.BodyText.Add('    Items[i] := ja.GetString(i);');
+      lSaveJSONMethod.BodyText.Add('    ja.put(Items[i]);');
+    end
+    else if ja.isInteger(0) then
+    begin
+      lLoadJSONMethod.BodyText.Add('    Items[i] := ja.GetInteger(i);');
+      lSaveJSONMethod.BodyText.Add('    ja.put(Items[i]);');
+    end
+    else if ja.isBoolean(0) then
+    begin
+      lLoadJSONMethod.BodyText.Add('    Items[i] := ja.GetBoolean(i);');
+      lSaveJSONMethod.BodyText.Add('    ja.put(Items[i]);');
+    end
+    else if ja.isDouble(0) then
+    begin
+      lLoadJSONMethod.BodyText.Add('    Items[i] := ja.GetDouble(i);');
+      lSaveJSONMethod.BodyText.Add('    ja.put(Items[i]);');
+    end
+    else if ja.isJSONObject(0) then
+    begin
+      lLoadJSONMethod.LocalVars.AddOrSetValue('item', aClassName + 'Item');
+      lLoadJSONMethod.BodyText.Add('    item := '+aClassName+'Item.Create;');
+      lLoadJSONMethod.BodyText.Add('    item.LoadFromJSON(ja.GetJSONObject(i));');
+      lLoadJSONMethod.BodyText.Add('    Add(item);');
+      lSaveMethod.LocalVars.AddOrSetValue('joItem','IJSONObject');
+      lSaveJSONMethod.BodyText.Add('    joItem := TJSON.NewObject;');
+      lSaveJSONMethod.BodyText.Add('    item.SaveToJSON(joItem);');
+      lSaveJSONMethod.BodyText.Add('    ja.Put(joItem);');
+    end
+    else if ja.isJSONArray(0) then
+    begin
+      lLoadJSONMethod.LocalVars.AddOrSetValue('item', aClassName + 'Item');
+      lLoadJSONMethod.BodyText.Add('    item := '+aClassName+'Item.Create;');
+      lLoadJSONMethod.BodyText.Add('    item.LoadFromJSON(ja.GetJSONObject(i));');
+      lLoadJSONMethod.BodyText.Add('    Add(item);');
+      lSaveMethod.LocalVars.AddOrSetValue('jaItem','IJSONArray');
+      lSaveJSONMethod.BodyText.Add('    jaItem := TJSON.NewArray;');
+      lSaveJSONMethod.BodyText.Add('    item.SaveToJSON(jaItem);');
+      lSaveJSONMethod.BodyText.Add('    ja.Put(jaItem);');
+    end;
+
+    lLoadJSONMethod.BodyText.Add('  end;');
+    lSaveJSONMethod.BodyText.Add('  end;');
+
     result.Add(lClass);
   end;
 end;
