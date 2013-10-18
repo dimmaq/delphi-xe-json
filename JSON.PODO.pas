@@ -81,8 +81,53 @@ begin
 end;
 
 function TCodeGen.JSONArrayToClasses(ja: IJSONArray; aClassName: string): TListOfGeneratableClass;
+var
+  lClasses: TListOfGeneratableClass;
+  lClass: TGeneratableClass;
+  lLoadMethod, lSaveMethod: TGeneratableMethod;
+  lLoadJSONMethod, lSaveJSONMethod: TGeneratableMethod;
+  lConstructor, lDestructor: TGeneratableMethod;
+  i: Integer;
 begin
   result := TListOfGeneratableClass.Create;
+
+  lClass := TGeneratableClass.Create(nil, aClassName, 'TList<'+'>', true); //TODO: Add Param for ItemClassName
+
+  lClass.InterfaceUnits.Add('Generics.Collections');
+  lClass.InterfaceUnits.Add('JSON');
+  lClass.ImplementationUnits.Add('IOUtils');
+
+  lConstructor := TGeneratableMethod.Create(lClass, 'Create', vPublic);
+  lConstructor.MethodKind := mkConstructor;
+  lDestructor := TGeneratableMethod.Create(lClass, 'Destroy', vPublic, bkOverride);
+  lDestructor.MethodKind := mkDestructor;
+
+  lLoadMethod := TGeneratableMethod.Create(lClass, 'LoadFromFile', vPublic);
+  lLoadMethod.Parameters := 'aFilename : string';
+  lLoadMethod.LocalVars.Add('s', 'string');
+  lLoadMethod.LocalVars.Add('ja', 'IJSONArray');
+  lLoadMethod.BodyText.Add('  s := TFile.ReadAllText(aFilename);');
+  lLoadMethod.BodyText.Add('  ja := TJSON.NewArray(s);');
+  lLoadMethod.BodyText.Add('  LoadFromJSON(ja);');
+
+  lSaveMethod := TGeneratableMethod.Create(lClass, 'SaveToFile', vPublic);
+  lSaveMethod.Parameters := 'aFilename : string';
+  lSaveMethod.LocalVars.Add('ja', 'IJSONArray');
+  lSaveMethod.BodyText.Add('  ja := TJSON.NewArray;');
+  lSaveMethod.BodyText.Add('  SaveToJSON(ja);');
+  lSaveMethod.BodyText.Add('  TFile.WriteAllText(aFilename, ja.ToString);');
+
+  lLoadJSONMethod := TGeneratableMethod.Create(lClass, 'LoadFromJSON', vPublic);
+  lLoadJSONMethod.Parameters := 'ja : IJSONArray';
+  lSaveJSONMethod := TGeneratableMethod.Create(lClass, 'SaveToJSON', vPublic);
+  lSaveJSONMethod.Parameters := 'ja : IJSONArray';
+
+  // TODO: Get type of first element
+
+
+
+  lDestructor.BodyText.Add('  inherited;');
+  result.Add(lClass);
 end;
 
 function TCodeGen.JSONObjectToClasses(jo: IJSONObject; aClassName: string): TListOfGeneratableClass;
@@ -193,7 +238,7 @@ begin
         TGeneratableField.Create(lClass, 'f' + key, 'T' + key + 'List', vStrictPrivate);
         lProperty := TGeneratableProperty.Create(lClass, key, 'T' + key + 'List', vPublic);
         lProperty.ReadMember := 'f' + key;
-        lClasses := JSONArrayToClasses(ja);
+        lClasses := JSONArrayToClasses(ja,'T'+key+'List');
         result.AddRange(lClasses);
         lClasses.Free;
         lLoadJSONMethod.BodyText.Add('  f' + key + '.LoadFromJSON(jo.GetJSONArray(''' + key + '''));');
