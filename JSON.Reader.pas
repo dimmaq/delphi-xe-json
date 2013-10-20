@@ -135,7 +135,7 @@ begin
       jtString:
         result.Put(unescapeString(value));
       jtInteger:
-        result.Put(StrToInt(value));
+        result.Put(StrToInt64(value));
       jtDouble:
         result.Put(StrToFloatF(value));
       jtBoolean:
@@ -201,9 +201,9 @@ end;
 
 function TJSONReader.isInteger(const aText: string): boolean;
 var
-  i: integer;
+  i: int64;
 begin
-  result := TryStrToInt(aText, i);
+  result := TryStrToInt64(aText, i);
 end;
 
 function TJSONReader.isNull(const aText: string): boolean;
@@ -239,7 +239,7 @@ begin
       jtString:
         result.Put(unescapeString(key), unescapeString(value));
       jtInteger:
-        result.Put(unescapeString(key), StrToInt(value));
+        result.Put(unescapeString(key), StrToInt64(value));
       jtDouble:
         result.Put(unescapeString(key), StrToFloatF(value));
       jtBoolean:

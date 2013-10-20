@@ -117,13 +117,17 @@ begin
 end;
 
 procedure TestIJSONObject.TestIsInteger;
+const
+  i64 = 9223372036854775807;
 begin
   FIJSONObject.Put('i1',12);
   FIJSONObject.Put('i2',-50);
   FIJSONObject.Put('d2',-0.5);
+  FIJSONObject.Put('i64',i64);
   Check(FIJSONObject.isInteger('i1'));
   Check(FIJSONObject.isInteger('i2'));
   CheckFalse(FIJSONObject.isInteger('d2'));
+  Check(FIJSONObject.GetInteger('i64', 0) = i64);
 end;
 
 procedure TestIJSONObject.TestIsObject;

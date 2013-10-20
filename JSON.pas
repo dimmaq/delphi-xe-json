@@ -34,7 +34,7 @@ type
     /// </summary>
     function isString(const aKey : string) : boolean;
     /// <summary>
-    ///   returns true if the item is an integer
+    ///   returns true if the item is an int64
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
@@ -64,7 +64,7 @@ type
     /// </summary>
     /// <param name="aKey">The Key</param>
     /// <param name="aValue">The Value</param>
-    procedure Put(const aKey: string; aValue: integer); overload;
+    procedure Put(const aKey: string; aValue: int64); overload;
     /// <summary>
     ///  Stores the Value <paramref name="aValue"/> for the Key <paramref name="aKey"/>.
     ///  Overwrites the Value for the specified Key, if it is already set
@@ -126,13 +126,13 @@ type
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to string</exception>
     function GetString(const aKey: string): string; overload;
     /// <summary>
-    ///   Gets the integer stored for <paramref name="aKey"/>
+    ///   Gets the int64 stored for <paramref name="aKey"/>
     /// </summary>
     ///  <param name="aKey">The Key</param>
-    ///  <returns>the integer stored for <paramref name="aKey"/></returns>
+    ///  <returns>the int64 stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
-    ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to integer</exception>
-    function GetInteger(const aKey: string): integer; overload;
+    ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to int64</exception>
+    function GetInteger(const aKey: string): int64; overload;
     /// <summary>
     ///   Gets the boolean stored for <paramref name="aKey"/>
     /// </summary>
@@ -177,14 +177,14 @@ type
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to string</exception>
     function GetString(const aKey: string; const aDefault : string): string; overload;
     /// <summary>
-    ///   Gets the integer stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
+    ///   Gets the int64 stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
     ///  <param name="aKey">The Key</param>
     ///  <param name="aDefault">The default return value</param>
-    ///  <returns>the integer stored for <paramref name="aKey"/></returns>
+    ///  <returns>the int64 stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
-    ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to integer</exception>
-    function GetInteger(const aKey: string; aDefault : integer): integer; overload;
+    ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to int64</exception>
+    function GetInteger(const aKey: string; aDefault : int64): int64; overload;
     /// <summary>
     ///   Gets the boolean stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -224,7 +224,7 @@ type
     /// <summary>
     ///   Gets the count of Key-Value-Pairs in this IJSONObject
     /// </summary>
-    property Count : integer read getCount;
+    property Count : integer read GetCount;
     /// <summary>
     ///   Removes all Key-Value-Pairs from this IJSONObject
     /// </summary>
@@ -246,7 +246,7 @@ type
     function isBoolean(aIndex : integer) : boolean;
     function isDouble(aIndex : integer) : boolean;
     procedure Put(const aValue: string); overload;
-    procedure Put(aValue: integer); overload;
+    procedure Put(aValue: int64); overload;
     procedure Put(aValue: double); overload;
     procedure Put(aValue: boolean); overload;
     procedure Put(const aValue: IJSONObject); overload;
@@ -255,7 +255,7 @@ type
     function GetJSONObject(aIndex : integer): IJSONObject;
     function GetJSONArray(aIndex : integer): IJSONArray;
     function GetString(aIndex : integer): String;
-    function GetInteger(aIndex : integer): integer;
+    function GetInteger(aIndex : integer): int64;
     function GetBoolean(aIndex : integer): boolean;
     function GetDouble(aIndex : integer): double;
     function GetValue(aIndex : integer) : TValue;

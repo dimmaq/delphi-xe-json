@@ -21,7 +21,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function ToString(aReadable: boolean = false): string;
+    function ToString(aReadable: boolean = false): string; reintroduce;
     function isJSONObject(const aKey: string): boolean;
     function isJSONArray(const aKey: string): boolean;
     function isString(const aKey: string): boolean;
@@ -29,7 +29,7 @@ type
     function isBoolean(const aKey: string): boolean;
     function isDouble(const aKey: string): boolean;
     procedure Put(const aKey: string; const aValue: string); overload;
-    procedure Put(const aKey: string; aValue: integer); overload;
+    procedure Put(const aKey: string; aValue: int64); overload;
     procedure Put(const aKey: string; aValue: double); overload;
     procedure Put(const aKey: string; aValue: boolean); overload;
     procedure Put(const aKey: string; const aValue: IJSONObject); overload;
@@ -38,13 +38,13 @@ type
     function GetJSONObject(const aKey: string): IJSONObject; overload;
     function GetJSONArray(const aKey: string): IJSONArray; overload;
     function GetString(const aKey: string): string; overload;
-    function GetInteger(const aKey: string): integer; overload;
+    function GetInteger(const aKey: string): int64; overload;
     function GetBoolean(const aKey: string): boolean; overload;
     function GetDouble(const aKey: string): double; overload;
     function GetJSONObject(const aKey: string; const aDefault: IJSONObject): IJSONObject; overload;
     function GetJSONArray(const aKey: string; const aDefault: IJSONArray): IJSONArray; overload;
     function GetString(const aKey: string; const aDefault: string): string; overload;
-    function GetInteger(const aKey: string; aDefault: integer): integer; overload;
+    function GetInteger(const aKey: string; aDefault: int64): int64; overload;
     function GetBoolean(const aKey: string; aDefault: boolean): boolean; overload;
     function GetDouble(const aKey: string; aDefault: double): double; overload;
     function GetKeys: TArray<string>;
@@ -62,7 +62,7 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-    function ToString(aReadable: boolean = false): string;
+    function ToString(aReadable: boolean = false): string; reintroduce;
     function isJSONObject(aIndex: integer): boolean;
     function isJSONArray(aIndex: integer): boolean;
     function isString(aIndex: integer): boolean;
@@ -70,7 +70,7 @@ type
     function isBoolean(aIndex: integer): boolean;
     function isDouble(aIndex: integer): boolean;
     procedure Put(const aValue: string); overload;
-    procedure Put(aValue: integer); overload;
+    procedure Put(aValue: int64); overload;
     procedure Put(aValue: double); overload;
     procedure Put(aValue: boolean); overload;
     procedure Put(const aValue: IJSONObject); overload;
@@ -79,7 +79,7 @@ type
     function GetJSONObject(aIndex: integer): IJSONObject;
     function GetJSONArray(aIndex: integer): IJSONArray;
     function GetString(aIndex: integer): string;
-    function GetInteger(aIndex: integer): integer;
+    function GetInteger(aIndex: integer): int64;
     function GetBoolean(aIndex: integer): boolean;
     function GetDouble(aIndex: integer): double;
     property Count : integer read GetCount;
@@ -152,12 +152,12 @@ begin
     result := aDefault;
 end;
 
-function TJSONObject.GetInteger(const aKey: string): integer;
+function TJSONObject.GetInteger(const aKey: string): int64;
 begin
-  result := fValues[aKey].AsInteger;
+  result := fValues[aKey].AsInt64;
 end;
 
-function TJSONObject.GetInteger(const aKey: string; aDefault: integer): integer;
+function TJSONObject.GetInteger(const aKey: string; aDefault: int64): int64;
 begin
   if HasKey(aKey) then
     result := GetInteger(aKey)
@@ -239,7 +239,7 @@ begin
     fValues.Add(aKey, aValue);
 end;
 
-procedure TJSONObject.Put(const aKey: string; aValue: integer);
+procedure TJSONObject.Put(const aKey: string; aValue: int64);
 begin
   if fValues.ContainsKey(aKey) then
     fValues[aKey] := aValue
@@ -310,7 +310,7 @@ var
   v: TValue;
 begin
   v := GetValue(aKey);
-  result := v.Kind = tkInteger;
+  result := v.Kind in [tkInteger, tkInt64];
 end;
 
 function TJSONObject.isJSONArray(const aKey: string): boolean;
@@ -386,9 +386,9 @@ begin
   result := fValues[aIndex].AsExtended;
 end;
 
-function TJSONArray.GetInteger(aIndex: integer): integer;
+function TJSONArray.GetInteger(aIndex: integer): int64;
 begin
-  result := fValues[aIndex].AsInteger;
+  result := fValues[aIndex].AsInt64;
 end;
 
 function TJSONArray.GetJSONArray(aIndex: integer): IJSONArray;
@@ -432,7 +432,7 @@ var
   v: TValue;
 begin
   v := GetValue(aIndex);
-  result := v.Kind = tkInteger;
+  result := v.Kind in [tkInteger, tkInt64];
 end;
 
 function TJSONArray.isJSONArray(aIndex: integer): boolean;
@@ -474,7 +474,7 @@ begin
   fValues.Add(TValue.Empty);
 end;
 
-procedure TJSONArray.Put(aValue: integer);
+procedure TJSONArray.Put(aValue: int64);
 begin
   fValues.Add(aValue);
 end;
