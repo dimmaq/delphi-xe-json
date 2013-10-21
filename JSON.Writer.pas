@@ -196,7 +196,11 @@ end;
 
 function TReadableJSONWriter.shouldBeNested(aValue: TValue): boolean;
 begin
-  if aValue.IsType<IJSONObject> then
+  if aValue.IsEmpty then
+  begin
+    result := false;
+  end
+  else if aValue.IsType<IJSONObject> then
   begin
     result := aValue.AsType<IJSONObject>.Count > 0;
   end

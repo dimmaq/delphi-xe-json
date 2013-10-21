@@ -46,6 +46,11 @@ begin
   aObject.Put('string','abc');
   ReturnValue := FIJSONWriter.writeObject(aObject);
   Check(pos('"string":"abc"',ReturnValue) > 0);
+
+  aObject := NewJSONObject;
+  aObject.Put('null');
+  ReturnValue := FIJSONWriter.writeObject(aObject);
+  Check(pos('"null":null',ReturnValue) > 0);
 end;
 
 procedure TestIJSONReadableWriter.TestEmptyArray;
