@@ -16,6 +16,7 @@ type
     procedure TearDown; override;
   published
     procedure TestSimpleObject;
+    procedure TestNullObject;
     procedure TestSimpleArray;
     procedure TestEmptyArray;
     procedure TestNestedEmptyArray;
@@ -46,6 +47,17 @@ begin
   aObject.Put('string','abc');
   ReturnValue := FIJSONWriter.writeObject(aObject);
   Check(pos('"string":"abc"',ReturnValue) > 0);
+end;
+
+procedure TestIJSONReadableWriter.TestNullObject;
+var
+  ReturnValue: string;
+  aObject: IJSONObject;
+begin
+  aObject := NewJSONObject;
+  aObject.Put('null');
+  ReturnValue := FIJSONWriter.writeObject(aObject);
+  Check(pos('"null":null',ReturnValue) > 0);
 end;
 
 procedure TestIJSONReadableWriter.TestEmptyArray;
