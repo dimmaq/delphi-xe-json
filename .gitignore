@@ -1,1 +1,8 @@
 Test/Win32/
+*.dcu
+*.bak
+__history/
+*.dproj.local
+*.identcache
+*.res
+*.drc
