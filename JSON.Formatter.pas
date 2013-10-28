@@ -15,16 +15,15 @@ implementation
 uses
   Classes,
   Math,
-  SysUtils;
+  SysUtils,
+  JSON.IOHelper;
 
 type
   TJSONFormatter = class(TInterfacedObject, IJSONFormatter)
   private
-    function RemoveWhiteSpace(const aInput: string): string;
     function InsertLineBreaks(const aInput: string): string;
     function RemoveEmptyLines(const aInput: string): string;
     function Indent(const aInput: string): string;
-    function getSpaces(aCount: integer): string;
   public
     function FormatJSON(const aInput: string): string;
   end;
@@ -39,23 +38,13 @@ end;
 function TJSONFormatter.FormatJSON(const aInput: string): string;
 begin
   // Clean the input from previous formatting
-  result := RemoveWhiteSpace(aInput);
+  result := TJSONIOHelper.RemoveWhiteSpace(aInput);
   // Split up logical units of JSON
   result := InsertLineBreaks(result);
   // It's easier to clean up empty lines then preventing them
   result := RemoveEmptyLines(result);
   // Indent each line with the correct space
   result := Indent(result);
-end;
-
-function TJSONFormatter.getSpaces(aCount: integer): string;
-begin
-  result := '';
-  while aCount > 0 do
-  begin
-    result := result + ' ';
-    dec(aCount);
-  end;
 end;
 
 function TJSONFormatter.Indent(const aInput: string): string;
@@ -73,13 +62,13 @@ begin
       case sl[i][1] of
         '{':
           begin
-            sl[i] := getSpaces(lvl * 2) + sl[i];
+            sl[i] := TJSONIOHelper.getSpaces(lvl * 2) + sl[i];
             if sl[i][2] <> '}' then
               inc(lvl);
           end;
         '[':
           begin
-            sl[i] := getSpaces(lvl * 2) + sl[i];
+            sl[i] := TJSONIOHelper.getSpaces(lvl * 2) + sl[i];
             if sl[i][2] <> ']' then
               inc(lvl);
           end;
@@ -87,10 +76,10 @@ begin
           begin
             dec(lvl);
             lvl := max(lvl, 0);
-            sl[i] := getSpaces(lvl * 2) + sl[i];
+            sl[i] := TJSONIOHelper.getSpaces(lvl * 2) + sl[i];
           end
       else
-        sl[i] := getSpaces(lvl * 2) + sl[i];
+        sl[i] := TJSONIOHelper.getSpaces(lvl * 2) + sl[i];
       end;
     end;
     result := sl.Text;
@@ -207,38 +196,6 @@ begin
     result := sl.Text;
   finally
     sl.Free;
-  end;
-end;
-
-function TJSONFormatter.RemoveWhiteSpace(const aInput: string): string;
-const
-  whitespace = [#0, #8, #9, #10, #12, #13, ' '];
-var
-  i: integer;
-  insideString: boolean;
-begin
-  i := 1;
-  insideString := false;
-  while i <= length(aInput) do
-  begin
-    if aInput[i] = '\' then
-    begin
-      result := result + aInput[i] + aInput[i + 1];
-      inc(i, 2);
-    end
-    else if aInput[i] = '"' then
-    begin
-      result := result + aInput[i];
-      insideString := not insideString;
-      inc(i);
-    end
-    else if not insideString and CharInSet(aInput[i], whitespace) then
-      inc(i)
-    else
-    begin
-      result := result + aInput[i];
-      inc(i);
-    end;
   end;
 end;
 

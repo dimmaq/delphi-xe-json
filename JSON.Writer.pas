@@ -19,7 +19,8 @@ implementation
 uses
   System.Rtti,
   System.TypInfo,
-  System.SysUtils;
+  System.SysUtils,
+  JSON.IOHelper;
 
 const
   CrLf = #13#10;
@@ -45,7 +46,6 @@ type
   private
     fLevel: integer;
     function shouldBeNested(aValue: TValue): boolean;
-    function getEmptyString(aQuantity: integer): string;
   protected
     function writePair(aKey: string; aValue: TValue): string; override;
   public
@@ -82,8 +82,8 @@ end;
 
 function TJSONWriter.writeObject(aObject: IJSONObject; aIndent: integer = 0): string;
 var
-  i : integer;
-  keys : TArray<string>;
+  i: integer;
+  keys: TArray<string>;
 begin
   result := '{';
   keys := aObject.GetKeys;
@@ -184,16 +184,6 @@ begin
   fLevel := 0;
 end;
 
-function TReadableJSONWriter.getEmptyString(aQuantity: integer): string;
-begin
-  result := '';
-  while aQuantity > 0 do
-  begin
-    result := result + ' ';
-    dec(aQuantity);
-  end;
-end;
-
 function TReadableJSONWriter.shouldBeNested(aValue: TValue): boolean;
 begin
   if aValue.IsEmpty then
@@ -221,11 +211,11 @@ begin
   if aArray.Count > 0 then
   begin
     sb := TStringBuilder.Create;
-    sIndent := getEmptyString(fLevel * 2);
+    sIndent := TJSONIOHelper.getSpaces(fLevel * 2);
     sb.Append('[');
     sb.AppendLine;
     inc(fLevel);
-    sIndent := getEmptyString(fLevel * 2);
+    sIndent := TJSONIOHelper.getSpaces(fLevel * 2);
 
     for i := 0 to aArray.Count - 1 do
     begin
@@ -237,7 +227,7 @@ begin
     end;
 
     dec(fLevel);
-    sIndent := getEmptyString(fLevel * 2);
+    sIndent := TJSONIOHelper.getSpaces(fLevel * 2);
     sb.Append(sIndent);
     sb.Append(']');
 
@@ -258,13 +248,13 @@ begin
   begin
     sb := TStringBuilder.Create;
 
-    sIndent := getEmptyString(fLevel * 2);
+    sIndent := TJSONIOHelper.getSpaces(fLevel * 2);
 
     sb.Append('{');
     sb.AppendLine;
     inc(fLevel);
 
-    sIndent := getEmptyString(fLevel * 2);
+    sIndent := TJSONIOHelper.getSpaces(fLevel * 2);
     isFirstElement := true;
 
     for s in aObject.GetKeys do
@@ -285,7 +275,7 @@ begin
 
     sb.AppendLine;
     dec(fLevel);
-    sb.Append(getEmptyString(fLevel * 2));
+    sb.Append(TJSONIOHelper.getSpaces(fLevel * 2));
     sb.Append('}');
 
     result := sb.ToString;
@@ -305,7 +295,7 @@ begin
     sb := TStringBuilder.Create;
     sb.Append('"' + escapeString(aKey) + '":');
     sb.AppendLine;
-    sb.Append(getEmptyString(fLevel * 2));
+    sb.Append(TJSONIOHelper.getSpaces(fLevel * 2));
     sb.Append(writeValue(aValue));
     result := sb.ToString;
     sb.Free;

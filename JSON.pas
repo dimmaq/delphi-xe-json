@@ -288,6 +288,15 @@ type
     /// </summary>
     ///  <param name="aText">the Text that will be formatted</param>
     class function FormatJSON(const aText : string) : string;
+
+    /// <summary>
+    ///
+    /// </summary>
+    class function GeneratePODOUnit(aObject : IJSONObject) : string; overload;
+    /// <summary>
+    ///
+    /// </summary>
+    class function GeneratePODOUnit(aArray : IJSONArray) : string; overload;
   end;
 
   JSONException = class (Exception);
@@ -295,7 +304,7 @@ type
 implementation
 
 uses
-  JSON.Reader, JSON.Formatter;
+  JSON.Reader, JSON.Formatter, JSON.PODO;
 
 { TJSON }
 
@@ -305,6 +314,22 @@ var
 begin
   formatter := getJSONFormatter;
   result := formatter.FormatJSON(aText);
+end;
+
+class function TJSON.GeneratePODOUnit(aObject: IJSONObject): string;
+var
+  generator : IPODOGenerator;
+begin
+  generator := getPODOGenerator;
+  result := generator.JSONObjectToPODO(aObject);
+end;
+
+class function TJSON.GeneratePODOUnit(aArray: IJSONArray): string;
+var
+  generator : IPODOGenerator;
+begin
+  generator := getPODOGenerator;
+  result := generator.JSONArrayToPODO(aArray);
 end;
 
 class function TJSON.NewArray(const aText: string): IJSONArray;
