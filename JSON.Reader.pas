@@ -17,7 +17,10 @@ function getJSONReader: IJSONReader;
 implementation
 
 uses
-  System.SysUtils, Generics.Collections, JSON.Classes;
+  System.SysUtils,
+  Generics.Collections,
+  JSON.Classes,
+  JSON.IOHelper;
 
 type
   TJSONType = (jtString, jtInteger, jtDouble, jtBoolean, jtObject, jtArray, jtNull);
@@ -45,7 +48,6 @@ type
     function unescapeString(s: string): string;
     function StrToFloatF(const aText: string): double;
     function StripQuotes(const aText: string): string;
-    procedure RemoveWhiteSpace;
 
     function TokenizeArray(const aText: string): TList<string>;
     function ArrayFromToken(aToken: TList<string>): IJSONArray;
@@ -259,7 +261,7 @@ var
   liToken: TList<string>;
 begin
   fText := Trim(aText);
-  RemoveWhiteSpace;
+  fText := TJSONIOHelper.RemoveWhiteSpace(fText);
   if (fText = '[]') or (fText = '') then
     result := NewJSONArray
   else if getType(fText) <> jtArray then
@@ -328,33 +330,6 @@ begin
     end;
   end;
   inc(fPosition);
-end;
-
-procedure TJSONReader.RemoveWhiteSpace;
-const
-  whitespace = [#0, #8, #9, #10, #12, #13, ' '];
-var
-  i: integer;
-  insideString: boolean;
-begin
-  i := 1;
-  insideString := false;
-  while i < length(fText) do
-  begin
-    if fText[i] = '\' then
-    begin
-      inc(i, 2);
-    end
-    else if fText[i] = '"' then
-    begin
-      insideString := not insideString;
-      inc(i);
-    end
-    else if not insideString and CharInSet(fText[i], whitespace) then
-      delete(fText, i, 1)
-    else
-      inc(i);
-  end;
 end;
 
 function TJSONReader.StripQuotes(const aText: string): string;
@@ -446,7 +421,7 @@ var
   dictToken: TDictionary<string, string>;
 begin
   fText := Trim(aText);
-  RemoveWhiteSpace;
+  fText := TJSONIOHelper.RemoveWhiteSpace(fText);
 
   if (fText = '{}') or (fText = '') then
     result := NewJSONObject
