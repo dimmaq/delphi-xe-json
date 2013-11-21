@@ -37,10 +37,10 @@ type
     function GetValue: string;
     //---
     function EndOfText: Boolean;
-    function NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean; overload;
-    function NextChar(ARaiseOnEnd: Boolean): Boolean; overload;
-    function NextChar(ACount: Integer): Boolean; overload;
-    function NextChar(): Boolean; overload;
+    function NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean; overload; inline;
+    function NextChar(ARaiseOnEnd: Boolean): Boolean; overload; inline;
+//    function NextChar(ACount: Integer): Boolean; overload; inline;
+    function NextChar(): Boolean; overload; inline;
     function SkipSpaces(ARaiseOnEnd: Boolean = True): Boolean;
     function IsObject: Boolean;
     function IsArray: Boolean;
@@ -203,61 +203,92 @@ begin
   NextChar(False);
 end;
 
+function unescapeJsonString(const A: string): string;
+var
+  j,l,k,b: Integer;
+  hex: string;
+  ch: Char;
+
+  procedure addChar; overload;
+  begin
+    Inc(k);
+    Result[k] := ch;
+  end;
+  procedure addChar(C: Char); overload;
+  begin
+    Inc(k);
+    Result[k] := C;
+  end;
+
+begin
+  j := 1;
+  l := Length(A);
+  k := 0;
+  SetLength(Result, l);
+  while j <= l do
+  begin
+    ch := A[j];
+    if ch = '\' then
+    begin
+      Inc(j);
+      ch := A[j];
+      case ch of
+        '"': addChar();
+        '\': addChar();
+        '/': addChar();
+        'b': addChar(#08);
+        'f': addChar(#12);
+        'n': addChar(#10);
+        'r': addChar(#13);
+        't': addChar(#09);
+        'u':
+          begin
+            Inc(j);
+            hex := '$' + Copy(A, j, 4);
+            if TryStrToInt(hex, b) then
+            begin
+              Inc(j, 3);
+              addChar(Char(b));
+            end
+            else
+            begin
+              raise JSONException.Create('Invalid Unicode found: ' + hex)
+            end
+          end
+      else
+        raise JSONException.Create('Invalid escape character inside');
+      end;
+    end
+    else
+    begin
+      addChar();
+    end;
+    Inc(j);
+  end;
+  SetLength(Result, k);
+end;
+
 function TJSONReader.GetString: string;
 var
-  k: Integer;
-  hex: string;
+  b: Boolean;
   pch: PChar;
-  sb: TStringBuilder;
 begin
+  Result := '';
   if IsString() then
   begin
-    sb := TStringBuilder.Create;
-    try
-      while NextChar() and (not IsString()) do
-      begin
-        if FText^ = '\' then
-        begin
-          NextChar();
-          case FText^ of
-            '"': sb.Append('"');
-            '\': sb.Append('\');
-            '/': sb.Append('/');
-            'b': sb.Append(#08);
-            'f': sb.Append(#12);
-            'n': sb.Append(#10);
-            'r': sb.Append(#13);
-            't': sb.Append(#09);
-            'u': begin
-                pch := FText;
-                Inc(pch);
-                NextChar(4);
-                SetString(hex, pch, 4);
-                hex := '$' + hex;
-                if TryStrToInt(hex, k) then
-                begin
-                  sb.Append(Char(k));
-                end
-                else
-                begin
-                  raise JSONException.Create('Invalid Unicode found: ' + hex)
-                end
-              end
-          else
-            raise JSONException.Create('Invalid escape character inside');
-          end;
-        end
-        else
-        begin
-          sb.Append(FText^);
-        end;
-      end;
-      //---
-      NextChar(False);
-      Result := sb.ToString;
-    finally
-      sb.Free
+    pch := FText;
+    b := False;
+    Inc(pch);
+    while NextChar() and (not IsString()) do
+    begin
+      if (not b) and (FText^ = '\') then
+        b := True;
     end;
+    //---
+    SetString(Result, pch, FText - pch);
+    if b then
+      Result := unescapeJsonString(Result);
+    NextChar(False);
   end
   else
   begin
@@ -374,7 +405,7 @@ begin
     RaiseEndOfData();
   end;
 end;
-function TJSONReader.NextChar(ACount: Integer): Boolean;
+{function TJSONReader.NextChar(ACount: Integer): Boolean;
 begin
   Inc(FText, ACount);
   Result := FText <= FLast;
@@ -382,7 +413,7 @@ begin
   begin
     RaiseEndOfData();
   end;
-end;
+end;}
 function TJSONReader.NextChar(): Boolean;
 begin
   Inc(FText, 1);
