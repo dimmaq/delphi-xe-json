@@ -11,6 +11,7 @@ uses
   System.Diagnostics,
   ujson,
   json,
+  JSON.Reader2,
   ujson_test in 'ujson_test.pas';
 
 
@@ -32,6 +33,13 @@ uses
     json.GetInteger('credits');
   end;
 
+  procedure test3;
+  var json: IJSONObject;
+  begin
+    json := getJSONReader2.readObject(TEST_JSON);
+    json.GetInteger('credits');
+  end;
+
   procedure test(proc: TProcedure);
   var
     j: Integer;
@@ -46,8 +54,12 @@ uses
 
 begin
   try
+    Write('old:');
     test(test1);
+    Write('reader:');
     test(test2);
+    Write('reader2:');
+    test(test3);
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);

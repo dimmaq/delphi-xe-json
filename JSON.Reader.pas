@@ -17,452 +17,434 @@ function getJSONReader: IJSONReader;
 implementation
 
 uses
-  System.SysUtils,
-  Generics.Collections,
-  JSON.Classes,
-  JSON.IOHelper;
+  System.SysUtils, System.Rtti, Generics.Collections,
+  JSON.Classes, JSON.IOHelper;
 
 type
   TJSONType = (jtString, jtInteger, jtDouble, jtBoolean, jtObject, jtArray, jtNull);
 
   TJSONReader = class(TInterfacedObject, IJSONReader)
   private
-    fText: string;
-    fPosition: Int64;
+    FText: PChar;
+    FLast: PChar;
+    //---
+    procedure InitText(const AText: string);
+    //---
+    function GetObject: IJSONObject;
+    function GetArray: IJSONArray;
+    function GetString: string;
+    function GetType: TJSONType;
+    function GetValue: string;
+    //---
+    function EndOfText: Boolean;
+    function NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean; overload;
+    function NextChar(ARaiseOnEnd: Boolean): Boolean; overload;
+    function NextChar(ACount: Integer): Boolean; overload;
+    function NextChar(): Boolean; overload;
+    function SkipSpaces(ARaiseOnEnd: Boolean = True): Boolean;
+    function IsObject: Boolean;
+    function IsArray: Boolean;
+    function IsString: Boolean;
+    function IsBoolean(out ABol: Boolean): Boolean;
+    function IsInteger(const AValue: string; out AInt: Int64): Boolean;
+    function IsDouble(const AValue: string; out ADouble: Double): Boolean;
+    function IsNull: Boolean;
   protected
-    procedure readUntil(ch: char);
-    procedure readString;
-    procedure readUntilControl;
-    procedure readUntilMatchingSquareBrace;
-    procedure readUntilMatchingCurlyBrace;
-
-    function isObject(const aText: string): boolean;
-    function isArray(const aText: string): boolean;
-    function isString(const aText: string): boolean;
-    function isBoolean(const aText: string): boolean;
-    function isInteger(const aText: string): boolean;
-    function isDouble(const aText: string): boolean;
-    function isNull(const aText: string): boolean;
-
-    function getType(const aText: string): TJSONType;
-    function unescapeString(s: string): string;
-    function StrToFloatF(const aText: string): double;
-    function StripQuotes(const aText: string): string;
-
-    function TokenizeArray(const aText: string): TList<string>;
-    function ArrayFromToken(aToken: TList<string>): IJSONArray;
-    function TokenizeObject(const aText: string): TDictionary<string, string>;
-    function ObjectFromToken(aToken: TDictionary<string, string>): IJSONObject;
   public
     function readObject(const aText: string): IJSONObject;
     function readArray(const aText: string): IJSONArray;
   end;
 
-function getJSONReader: IJSONReader;
+const
+  SNULL_LENGTH = 4;
+  SBOOL_LENGTH: array[Boolean] of Integer = (5, 4);
+
+var
+  STRUE: string = 'true';
+  SFALSE: string = 'false';
+  SNULL: string = 'null';
+
+function geTJSONReader: IJSONReader;
 begin
   result := TJSONReader.Create;
 end;
 
+procedure RaiseEndOfData;
+begin
+  raise JSONException.Create('Unexpected end of data');
+end;
+
+procedure RaiseUnknowValueType(const A: string);
+begin
+  raise JSONException.CreateFmt('Couldn''t identify valuetype of "%s"', [A]);
+end;
+
 { TJSONReader }
 
-function TJSONReader.unescapeString(s: string): string;
+function TJSONReader.GetArray: IJSONArray;
 var
-  i: integer;
-  hex: string;
-  sb: TStringBuilder;
+  val: string;
+  bol: Boolean;
+  int: Int64;
+  ext: Double;
 begin
-  sb := TStringBuilder.Create;
-  try
-    s := StripQuotes(s);
-    i := 1;
-    while i <= length(s) do
-    begin
-      if s[i] = '\' then
+  Result := NewJSONArray();
+  SkipSpaces();
+  if IsArray() then
+  begin
+    NextChar();
+  end;
+  while (not EndOfText()) and (FText^ <> ']') do
+  begin
+    SkipSpaces();
+    case GetType() of
+      jtObject: Result.Put(GetObject());
+      jtArray: Result.Put(GetArray());
+      jtString: Result.Put(GetString());
+    else
       begin
-        inc(i);
-        case s[i] of
-          '"':
-            sb.Append('"');
-          '\':
-            sb.Append('\');
-          '/':
-            sb.Append('/');
-          'b':
-            sb.Append(#08);
-          'f':
-            sb.Append(#12);
-          'n':
-            sb.Append(#10);
-          'r':
-            sb.Append(#13);
-          't':
-            sb.Append(#09);
-          'u':
-            begin
-              inc(i);
-              hex := '$' + copy(s, i, 4);
-              try
-                sb.Append(WideChar(StrToInt(hex)));
-              except
-                on ex: EConvertError do
-                begin
-                  ex.RaiseOuterException(JSONException.Create('Invalid Unicode found: ' + s));
-                end;
-              end;
-              inc(i, 3);
-            end
+        if IsNull() then
+        begin
+          Result.Put();
+          NextChar(True, SNULL_LENGTH);
+        end
         else
-          raise JSONException.Create('Invalid escape character inside: ' + s);
+        if IsBoolean(bol) then
+        begin
+          Result.Put(bol);
+          NextChar(True, SBOOL_LENGTH[bol]);
+        end
+        else
+        begin
+          val := GetValue();
+          if IsInteger(val, int) then
+            Result.Put(int)
+          else
+          if IsDouble(val, ext) then
+            Result.Put(ext)
+          else
+            RaiseUnknowValueType(val)
         end;
       end
-      else
-        sb.Append(s[i]);
-      inc(i);
     end;
-    result := sb.ToString;
-  finally
-    sb.Free;
+    SkipSpaces();
+    if FText^ = ',' then
+    begin
+      NextChar()
+    end
   end;
+  NextChar(False)
 end;
 
-function TJSONReader.ArrayFromToken(aToken: TList<string>): IJSONArray;
+function TJSONReader.GetObject: IJSONObject;
 var
-  value: string;
-  rdr: IJSONReader;
+  key: string;
+  val: string;
+  bol: Boolean;
+  int: Int64;
+  ext: Double;
 begin
-  result := NewJSONArray;
-  for value in aToken do
+  Result := NewJSONObject();
+  SkipSpaces();
+  if IsObject() then
   begin
-    case getType(value) of
-      jtString:
-        result.Put(unescapeString(value));
-      jtInteger:
-        result.Put(StrToInt64(value));
-      jtDouble:
-        result.Put(StrToFloatF(value));
-      jtBoolean:
-        result.Put(StrToBool(value));
-      jtObject:
-        begin
-          rdr := getJSONReader;
-          result.Put(rdr.readObject(value));
-        end;
-      jtArray:
-        begin
-          rdr := getJSONReader;
-          result.Put(rdr.readArray(value));
-        end;
-      jtNull:
-        result.Put;
-    end;
+    NextChar();
   end;
+  while (not EndOfText()) and (FText^ <> '}') do
+  begin
+    SkipSpaces();
+    key := GetString();
+    SkipSpaces();
+    if FText^ = ':' then
+    begin
+      NextChar();
+      SkipSpaces();
+      case GetType() of
+        jtObject: Result.Put(key, GetObject());
+        jtArray: Result.Put(key, GetArray());
+        jtString: Result.Put(key, GetString());
+      else
+        begin
+          if IsNull() then
+          begin
+            Result.Put(key);
+            NextChar(True, SNULL_LENGTH);
+          end
+          else
+          if IsBoolean(bol) then
+          begin
+            Result.Put(key, bol);
+            NextChar(True, SBOOL_LENGTH[bol]);
+          end
+          else
+          begin
+            val := GetValue();
+            if IsInteger(val, int) then
+              Result.Put(key, int)
+            else
+            if IsDouble(val, ext) then
+              Result.Put(key, ext)
+            else
+              RaiseUnknowValueType(val)
+          end;
+        end
+      end
+    end
+    else
+    begin
+      raise JSONException.CreateFmt('Not value for key: "%s"', [key]);
+    end;
+    SkipSpaces();
+    if FText^ = ',' then
+    begin
+      NextChar()
+    end
+  end;
+  NextChar(False);
 end;
 
-function TJSONReader.getType(const aText: string): TJSONType;
-begin
-  if isObject(aText) then
-    result := jtObject
-  else if isArray(aText) then
-    result := jtArray
-  else if isString(aText) then
-    result := jtString
-  else if isBoolean(aText) then
-    result := jtBoolean
-  else if isInteger(aText) then
-    result := jtInteger
-  else if isDouble(aText) then
-    result := jtDouble
-  else if isNull(aText) then
-    result := jtNull
-  else
-    raise JSONException.Create('Couldn''t identify valuetype of "' + aText + '"');
-end;
-
-function TJSONReader.isArray(const aText: string): boolean;
-begin
-  if length(aText) > 0 then
-    result := (aText[1] = '[') and (aText[length(aText)] = ']')
-  else
-    result := false;
-end;
-
-function TJSONReader.isBoolean(const aText: string): boolean;
-begin
-  result := (aText = 'true') or (aText = 'false');
-end;
-
-function TJSONReader.isDouble(const aText: string): boolean;
+function TJSONReader.GetString: string;
 var
-  d: double;
+  k: Integer;
+  hex: string;
+  pch: PChar;
+  sb: TStringBuilder;
+begin
+  if IsString() then
+  begin
+    sb := TStringBuilder.Create;
+    try
+      while NextChar() and (not IsString()) do
+      begin
+        if FText^ = '\' then
+        begin
+          NextChar();
+          case FText^ of
+            '"': sb.Append('"');
+            '\': sb.Append('\');
+            '/': sb.Append('/');
+            'b': sb.Append(#08);
+            'f': sb.Append(#12);
+            'n': sb.Append(#10);
+            'r': sb.Append(#13);
+            't': sb.Append(#09);
+            'u': begin
+                pch := FText;
+                Inc(pch);
+                NextChar(4);
+                SetString(hex, pch, 4);
+                hex := '$' + hex;
+                if TryStrToInt(hex, k) then
+                begin
+                  sb.Append(Char(k));
+                end
+                else
+                begin
+                  raise JSONException.Create('Invalid Unicode found: ' + hex)
+                end
+              end
+          else
+            raise JSONException.Create('Invalid escape character inside');
+          end;
+        end
+        else
+        begin
+          sb.Append(FText^);
+        end;
+      end;
+      //---
+      NextChar(False);
+      Result := sb.ToString;
+    finally
+      sb.Free
+    end;
+  end
+  else
+  begin
+    raise JSONException.Create('is not string');
+  end
+end;
+
+function TJSONReader.GetType: TJSONType;
+begin
+  if IsObject() then
+    Result := jtObject
+  else if IsArray() then
+    Result := jtArray
+  else if IsString() then
+    Result := jtString
+  else
+    Result := jtNull
+end;
+
+function TJSONReader.GetValue: string;
+const
+  CONTROL_CHARS = ['[', ']', '{', '}', ',', '"', #0..#32];
+var
+  pch: PChar;
+begin
+  pch := FText;
+  SkipSpaces();
+  while NextChar() and (not CharInSet(FText^, CONTROL_CHARS)) do
+    ;
+  SetString(Result, pch, FText - pch);
+end;
+
+procedure TJSONReader.InitText(const AText: string);
+begin
+  FText := PChar(AText);
+  FLast := FText;
+  Inc(FLast, AText.Length);
+end;
+
+function TJSONReader.IsArray: Boolean;
+begin
+  Result := FText^ = '['
+end;
+
+function TJSONReader.IsBoolean(out ABol: Boolean): Boolean;
+begin
+  if (FLast - FText) >= 5 then // 'true' 'false'
+  begin
+    if CompareMem(FText, Pointer(STRUE), SBOOL_LENGTH[TRUE] * SizeOf(Char)) then
+    begin
+      ABol := True;
+      Exit(True);
+    end
+    else
+    if CompareMem(FText, Pointer(SFalse), SBOOL_LENGTH[FALSE] * SizeOf(Char)) then
+    begin
+      ABol := False;
+      Exit(True);
+    end
+  end;
+  Result := False;
+end;
+
+function TJSONReader.IsDouble(const AValue: string; out ADouble: Double): Boolean;
+var
   fs: TFormatSettings;
 begin
   fs := TFormatSettings.Create('en-US');
   fs.DecimalSeparator := '.';
-  result := TryStrToFloat(aText, d, fs);
+  Result := TryStrToFloat(AValue, ADouble, fs);
 end;
 
-function TJSONReader.isInteger(const aText: string): boolean;
-var
-  i: int64;
+function TJSONReader.IsInteger(const AValue: string; out AInt: Int64): Boolean;
 begin
-  result := TryStrToInt64(aText, i);
+  Result := TryStrToInt64(AValue, AInt);
 end;
 
-function TJSONReader.isNull(const aText: string): boolean;
+function TJSONReader.EndOfText: Boolean;
 begin
-  result := aText = 'null';
+  Result := (FText = nil) or (FText > FLast)
 end;
 
-function TJSONReader.isObject(const aText: string): boolean;
+function TJSONReader.IsNull: Boolean;
 begin
-  if length(aText) > 0 then
-    result := (aText[1] = '{') and (aText[length(aText)] = '}')
-  else
-    result := false;
+  Result := ((FLast - FText) >= SNULL_LENGTH)
+              and CompareMem(FText, Pointer(SNULL), SNULL_LENGTH * SizeOf(Char));
 end;
 
-function TJSONReader.isString(const aText: string): boolean;
+function TJSONReader.IsObject: boolean;
 begin
-  if length(aText) > 1 then
-    result := (aText[1] = '"') and (aText[length(aText)] = '"')
-  else
-    result := false;
+  Result := FText^ = '{'
 end;
 
-function TJSONReader.ObjectFromToken(aToken: TDictionary<string, string>): IJSONObject;
-var
-  key, value: string;
+function TJSONReader.IsString: Boolean;
 begin
-  result := NewJSONObject;
-  for key in aToken.Keys do
+  Result := FText^ = '"'
+end;
+
+function TJSONReader.NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean;
+begin
+  Inc(FText, ACount);
+  Result := FText <= FLast;
+  if ARaiseOnEnd and (not Result) then
   begin
-    value := aToken[key];
-    case getType(value) of
-      jtString:
-        result.Put(unescapeString(key), unescapeString(value));
-      jtInteger:
-        result.Put(unescapeString(key), StrToInt64(value));
-      jtDouble:
-        result.Put(unescapeString(key), StrToFloatF(value));
-      jtBoolean:
-        result.Put(unescapeString(key), StrToBool(value));
-      jtObject:
-        result.Put(unescapeString(key), readObject(value));
-      jtArray:
-        result.Put(unescapeString(key), readArray(value));
-      jtNull:
-        result.Put(unescapeString(key));
-    end;
+    RaiseEndOfData();
+  end;
+end;
+function TJSONReader.NextChar(ARaiseOnEnd: Boolean): Boolean;
+begin
+  Inc(FText, 1);
+  Result := FText <= FLast;
+  if ARaiseOnEnd and (not Result) then
+  begin
+    RaiseEndOfData();
+  end;
+end;
+function TJSONReader.NextChar(ACount: Integer): Boolean;
+begin
+  Inc(FText, ACount);
+  Result := FText <= FLast;
+  if not Result then
+  begin
+    RaiseEndOfData();
+  end;
+end;
+function TJSONReader.NextChar(): Boolean;
+begin
+  Inc(FText, 1);
+  Result := FText <= FLast;
+  if not Result then
+  begin
+    RaiseEndOfData();
   end;
 end;
 
 function TJSONReader.readArray(const aText: string): IJSONArray;
-var
-  liToken: TList<string>;
 begin
-  fText := Trim(aText);
-  fText := TJSONIOHelper.RemoveWhiteSpace(fText);
-  if (fText = '[]') or (fText = '') then
-    result := NewJSONArray
-  else if getType(fText) <> jtArray then
-    raise JSONException.Create('Not an array: ' + aText)
+  if aText.IsEmpty then
+  begin
+    Result := NewJSONArray()
+  end
   else
   begin
-    fPosition := 2;
-    liToken := TokenizeArray(fText);
-    result := ArrayFromToken(liToken);
-    liToken.Free;
-  end;
+    InitText(aText);
+    if SkipSpaces(False) then
+    begin
+      Result := GetArray();
+    end
+    else
+    begin
+      Result := NewJSONArray()
+    end
+  end
 end;
 
-procedure TJSONReader.readUntilControl;
-const
-  control = ['{', '[', ','];
-var
-  inString: boolean;
+function TJSONReader.SkipSpaces(ARaiseOnEnd: Boolean): Boolean;
 begin
-  inString := false;
-  while (fPosition < length(fText)) and (inString or not CharInSet(fText[fPosition], control)) do
+  while (FText^ <= ' ') and (FText <= FLast) do
   begin
-    if not inString then
-      inString := (fText[fPosition] = '"') and (fText[fPosition - 1] <> '\')
-    else if (fText[fPosition] = '"') and (fText[fPosition - 1] <> '\') then
-      inString := false;
-    inc(fPosition);
+    Inc(FText);
   end;
-end;
-
-procedure TJSONReader.readUntilMatchingCurlyBrace;
-var
-  level: integer;
-begin
-  level := 1;
-  while level > 0 do
+  Result := FText <= FLast;
+  if ARaiseOnEnd and (not Result) then
   begin
-    inc(fPosition);
-    case fText[fPosition] of
-      '{':
-        inc(level);
-      '}':
-        dec(level);
-      '"':
-        readUntil('"');
-    end;
-  end;
-  inc(fPosition);
-end;
-
-procedure TJSONReader.readUntilMatchingSquareBrace;
-var
-  level: integer;
-begin
-  level := 1;
-  while level > 0 do
-  begin
-    inc(fPosition);
-    case fText[fPosition] of
-      '[':
-        inc(level);
-      ']':
-        dec(level);
-      '"':
-        readUntil('"');
-    end;
-  end;
-  inc(fPosition);
-end;
-
-function TJSONReader.StripQuotes(const aText: string): string;
-begin
-  result := aText;
-  if result[1] = '"' then
-    delete(result, 1, 1);
-  if result[length(result)] = '"' then
-    delete(result, length(result), 1);
-end;
-
-function TJSONReader.StrToFloatF(const aText: string): double;
-var
-  f: TFormatSettings;
-begin
-  f := TFormatSettings.Create('en-US');
-  f.DecimalSeparator := '.';
-  result := StrToFloat(aText, f);
-end;
-
-function TJSONReader.TokenizeArray(const aText: string): TList<string>;
-var
-  start: integer;
-  value: string;
-begin
-  result := TList<string>.Create;
-  while fPosition < length(fText) do
-  begin
-    start := fPosition;
-    readUntilControl;
-    case fText[fPosition] of
-      '{':
-        begin
-          readUntilMatchingCurlyBrace;
-          value := copy(fText, start, fPosition - start);
-        end;
-      '[':
-        begin
-          readUntilMatchingSquareBrace;
-          value := copy(fText, start, fPosition - start);
-        end;
-      ',', '}', ']':
-        begin
-          value := copy(fText, start, fPosition - start);
-        end;
-    end;
-    inc(fPosition);
-    result.Add(Trim(value));
-  end;
-end;
-
-function TJSONReader.TokenizeObject(const aText: string): TDictionary<string, string>;
-var
-  start: integer;
-  key, value: string;
-begin
-  result := TDictionary<string, string>.Create;
-  while fPosition < length(fText) do
-  begin
-    start := fPosition;
-    readUntil('"');
-    inc(fPosition);
-    readString;
-    key := Trim(copy(fText, start + 1, fPosition - start - 2));
-    key := StripQuotes(key);
-    inc(fPosition);
-    start := fPosition;
-    readUntilControl;
-    case fText[fPosition] of
-      '{':
-        begin
-          readUntilMatchingCurlyBrace;
-          value := copy(fText, start, fPosition - start);
-        end;
-      '[':
-        begin
-          readUntilMatchingSquareBrace;
-          value := copy(fText, start, fPosition - start);
-        end;
-      ',', '}':
-        value := copy(fText, start, fPosition - start);
-    end;
-    result.Add(key, Trim(value));
+    RaiseEndOfData();
   end;
 end;
 
 function TJSONReader.readObject(const aText: string): IJSONObject;
-var
-  dictToken: TDictionary<string, string>;
 begin
-  fText := Trim(aText);
-  fText := TJSONIOHelper.RemoveWhiteSpace(fText);
-
-  if (fText = '{}') or (fText = '') then
-    result := NewJSONObject
-  else if getType(fText) <> jtObject then
-    raise JSONException.Create('Not an object: ' + fText)
+  if aText.IsEmpty then
+  begin
+    Result := NewJsonObject()
+  end
   else
   begin
-    fPosition := 1;
-    dictToken := TokenizeObject(fText);
-    result := ObjectFromToken(dictToken);
-    dictToken.Free;
-  end;
-end;
-
-procedure TJSONReader.readString;
-var
-  done: boolean;
-begin
-  done := false;
-  while not done and (fPosition < length(fText)) do
-  begin
-    if fText[fPosition] = '\' then
+    InitText(aText);
+    if SkipSpaces(False) then
     begin
-      inc(fPosition, 2);
-    end
-    else if fText[fPosition] = '"' then
-    begin
-      inc(fPosition);
-      done := true;
+      Result := GetObject();
     end
     else
-      inc(fPosition);
-  end;
+    begin
+      Result := NewJsonObject()
+    end
+  end
 end;
 
-procedure TJSONReader.readUntil(ch: char);
-begin
-  while fText[fPosition] <> ch do
-  begin
-    inc(fPosition);
-  end;
-end;
 
 end.

@@ -11,18 +11,22 @@ type
 implementation
 
 uses
-  SysUtils;
+  SysUtils, System.Math;
+
+const
+  PRE_SPACE_STR_COUNT = 16;
+
+var
+  SpaceStringList: array[0..PRE_SPACE_STR_COUNT] of string;
 
 { TJSONIO }
 
 class function TJSONIOHelper.getSpaces(aQuantity: integer): string;
 begin
-  result := '';
-  while aQuantity > 0 do
-  begin
-    result := result + ' ';
-    dec(aQuantity);
-  end;
+  if InRange(aQuantity, 0, PRE_SPACE_STR_COUNT) then
+    Exit(SpaceStringList[aQuantity]);
+
+  Result := StringOfChar(' ', aQuantity)
 end;
 
 class function TJSONIOHelper.RemoveWhiteSpace(const aInput: string): string;
@@ -56,5 +60,15 @@ begin
     end;
   end;
 end;
+
+procedure FillSpaceStringList;
+var j: Integer;
+begin
+  for j := 0 to PRE_SPACE_STR_COUNT do
+    SpaceStringList[j] := StringOfChar(' ', j);
+end;
+
+initialization
+  FillSpaceStringList();
 
 end.
