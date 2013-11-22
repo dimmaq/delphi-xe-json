@@ -36,15 +36,10 @@ type
     function GetType: TJSONType;
     function GetValue: string;
     //---
-    function EndOfText: Boolean;
-    function NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean; overload; inline;
-    function NextChar(ARaiseOnEnd: Boolean): Boolean; overload; inline;
-//    function NextChar(ACount: Integer): Boolean; overload; inline;
-    function NextChar(): Boolean; overload; inline;
-    function SkipSpaces(ARaiseOnEnd: Boolean = True): Boolean;
-    function IsObject: Boolean;
-    function IsArray: Boolean;
-    function IsString: Boolean;
+    procedure NextChar(const ACount: Integer); overload; inline;
+    procedure NextChar; overload; inline;
+    function SkipSpacesNotRaise: Boolean;
+    procedure SkipSpaces; inline;
     function IsBoolean(out ABol: Boolean): Boolean;
     function IsInteger(const AValue: string; out AInt: Int64): Boolean;
     function IsDouble(const AValue: string; out ADouble: Double): Boolean;
@@ -81,126 +76,50 @@ end;
 
 { TJSONReader }
 
-function TJSONReader.GetArray: IJSONArray;
-var
-  val: string;
-  bol: Boolean;
-  int: Int64;
-  ext: Double;
+procedure TJSONReader.InitText(const AText: string);
 begin
-  Result := NewJSONArray();
-  SkipSpaces();
-  if IsArray() then
-  begin
-    NextChar();
-  end;
-  while (not EndOfText()) and (FText^ <> ']') do
-  begin
-    SkipSpaces();
-    case GetType() of
-      jtObject: Result.Put(GetObject());
-      jtArray: Result.Put(GetArray());
-      jtString: Result.Put(GetString());
-    else
-      begin
-        if IsNull() then
-        begin
-          Result.Put();
-          NextChar(True, SNULL_LENGTH);
-        end
-        else
-        if IsBoolean(bol) then
-        begin
-          Result.Put(bol);
-          NextChar(True, SBOOL_LENGTH[bol]);
-        end
-        else
-        begin
-          val := GetValue();
-          if IsInteger(val, int) then
-            Result.Put(int)
-          else
-          if IsDouble(val, ext) then
-            Result.Put(ext)
-          else
-            RaiseUnknowValueType(val)
-        end;
-      end
-    end;
-    SkipSpaces();
-    if FText^ = ',' then
-    begin
-      NextChar()
-    end
-  end;
-  NextChar(False)
+  FText := PChar(AText);
+  FLast := FText;
+  Inc(FLast, AText.Length);
 end;
 
-function TJSONReader.GetObject: IJSONObject;
-var
-  key: string;
-  val: string;
-  bol: Boolean;
-  int: Int64;
-  ext: Double;
+procedure TJSONReader.NextChar(const ACount: Integer);
 begin
-  Result := NewJSONObject();
-  SkipSpaces();
-  if IsObject() then
+  Inc(FText, ACount);
+  if FText > FLast then
   begin
-    NextChar();
+    RaiseEndOfData();
   end;
-  while (not EndOfText()) and (FText^ <> '}') do
+end;
+
+procedure TJSONReader.NextChar;
+begin
+  Inc(FText);
+  if FText > FLast then
   begin
-    SkipSpaces();
-    key := GetString();
-    SkipSpaces();
-    if FText^ = ':' then
-    begin
-      NextChar();
-      SkipSpaces();
-      case GetType() of
-        jtObject: Result.Put(key, GetObject());
-        jtArray: Result.Put(key, GetArray());
-        jtString: Result.Put(key, GetString());
-      else
-        begin
-          if IsNull() then
-          begin
-            Result.Put(key);
-            NextChar(True, SNULL_LENGTH);
-          end
-          else
-          if IsBoolean(bol) then
-          begin
-            Result.Put(key, bol);
-            NextChar(True, SBOOL_LENGTH[bol]);
-          end
-          else
-          begin
-            val := GetValue();
-            if IsInteger(val, int) then
-              Result.Put(key, int)
-            else
-            if IsDouble(val, ext) then
-              Result.Put(key, ext)
-            else
-              RaiseUnknowValueType(val)
-          end;
-        end
-      end
-    end
-    else
-    begin
-      raise JSONException.CreateFmt('Not value for key: "%s"', [key]);
-    end;
-    SkipSpaces();
-    if FText^ = ',' then
-    begin
-      NextChar()
-    end
+    RaiseEndOfData();
   end;
-  NextChar(False);
+end;
+
+procedure TJSONReader.SkipSpaces;
+begin
+  while (FText <= FLast) and (FText^ <= ' ') do
+  begin
+    Inc(FText);
+  end;
+  if FText > FLast then
+  begin
+    RaiseEndOfData();
+  end;
+end;
+
+function TJSONReader.SkipSpacesNotRaise: Boolean;
+begin
+  while (FText^ <= ' ') and (FText <= FLast) do
+  begin
+    Inc(FText);
+  end;
+  Result := FText <= FLast
 end;
 
 function unescapeJsonString(const A: string): string;
@@ -236,11 +155,11 @@ begin
         '"': addChar();
         '\': addChar();
         '/': addChar();
-        'b': addChar(#08);
-        'f': addChar(#12);
-        'n': addChar(#10);
-        'r': addChar(#13);
-        't': addChar(#09);
+        'b': addChar(#08); // backspace
+        'f': addChar(#12); // formfeed
+        'n': addChar(#10); // newline
+        'r': addChar(#13); //carriage return
+        't': addChar(#09); // tab
         'u':
           begin
             Inc(j);
@@ -270,67 +189,59 @@ end;
 
 function TJSONReader.GetString: string;
 var
-  b: Boolean;
-  pch: PChar;
+  isUnescape: Boolean;
+  startChar: PChar;
 begin
   Result := '';
-  if IsString() then
+  if FText^ = '"' then
   begin
-    pch := FText;
-    b := False;
-    Inc(pch);
-    while NextChar() and (not IsString()) do
+    isUnescape := False;
+    NextChar();
+    startChar := FText;
+    while FText^ <> '"' do
     begin
-      if (not b) and (FText^ = '\') then
-        b := True;
+      if FText^ = '\' then
+      begin
+        Inc(FText);
+        if not isUnescape then
+          isUnescape := True;
+      end;
+      NextChar();
     end;
     //---
-    SetString(Result, pch, FText - pch);
-    if b then
+    SetString(Result, startChar, FText - startChar);
+    if isUnescape then
       Result := unescapeJsonString(Result);
-    NextChar(False);
   end
   else
   begin
     raise JSONException.Create('is not string');
-  end
+  end;
+  Inc(FText);
 end;
 
 function TJSONReader.GetType: TJSONType;
 begin
-  if IsObject() then
-    Result := jtObject
-  else if IsArray() then
-    Result := jtArray
-  else if IsString() then
-    Result := jtString
-  else
-    Result := jtNull
+  case FText^ of
+    '{': Result := jtObject;
+    '[': Result := jtArray;
+    '"': Result := jtString;
+    else
+      Result := jtNull
+  end;
 end;
 
 function TJSONReader.GetValue: string;
-const
-  CONTROL_CHARS = ['[', ']', '{', '}', ',', '"', #0..#32];
 var
-  pch: PChar;
+  startChar: PChar;
 begin
-  pch := FText;
+  startChar := FText;
   SkipSpaces();
-  while NextChar() and (not CharInSet(FText^, CONTROL_CHARS)) do
-    ;
-  SetString(Result, pch, FText - pch);
-end;
-
-procedure TJSONReader.InitText(const AText: string);
-begin
-  FText := PChar(AText);
-  FLast := FText;
-  Inc(FLast, AText.Length);
-end;
-
-function TJSONReader.IsArray: Boolean;
-begin
-  Result := FText^ = '['
+  while not CharInSet(FText^, ['[', ']', '{', '}', ',', '"', #0..#32]) do
+  begin
+    NextChar();
+  end;
+  SetString(Result, startChar, FText - startChar);
 end;
 
 function TJSONReader.IsBoolean(out ABol: Boolean): Boolean;
@@ -366,62 +277,133 @@ begin
   Result := TryStrToInt64(AValue, AInt);
 end;
 
-function TJSONReader.EndOfText: Boolean;
-begin
-  Result := (FText = nil) or (FText > FLast)
-end;
-
 function TJSONReader.IsNull: Boolean;
 begin
   Result := ((FLast - FText) >= SNULL_LENGTH)
               and CompareMem(FText, Pointer(SNULL), SNULL_LENGTH * SizeOf(Char));
 end;
 
-function TJSONReader.IsObject: boolean;
+
+function TJSONReader.GetArray: IJSONArray;
+var
+  val: string;
+  bol: Boolean;
+  int: Int64;
+  ext: Double;
 begin
-  Result := FText^ = '{'
+  Result := NewJSONArray();
+  SkipSpaces();
+  if FText^ = '[' then
+  begin
+    NextChar();
+  end;
+  while (FText <= FLast) and (FText^ <> ']') do
+  begin
+    SkipSpaces();
+    case GetType() of
+      jtObject: Result.Put(GetObject());
+      jtArray: Result.Put(GetArray());
+      jtString: Result.Put(GetString());
+    else
+      begin
+        if IsNull() then
+        begin
+          Result.Put();
+          NextChar(SNULL_LENGTH);
+        end
+        else
+        if IsBoolean(bol) then
+        begin
+          Result.Put(bol);
+          NextChar(SBOOL_LENGTH[bol]);
+        end
+        else
+        begin
+          val := GetValue();
+          if IsInteger(val, int) then
+            Result.Put(int)
+          else
+          if IsDouble(val, ext) then
+            Result.Put(ext)
+          else
+            RaiseUnknowValueType(val)
+        end;
+      end
+    end;
+    SkipSpaces();
+    if FText^ = ',' then
+    begin
+      NextChar()
+    end
+  end;
+  Inc(FText);
 end;
 
-function TJSONReader.IsString: Boolean;
+function TJSONReader.GetObject: IJSONObject;
+var
+  key: string;
+  val: string;
+  bol: Boolean;
+  int: Int64;
+  ext: Double;
 begin
-  Result := FText^ = '"'
-end;
-
-function TJSONReader.NextChar(ARaiseOnEnd: Boolean; ACount: Integer): Boolean;
-begin
-  Inc(FText, ACount);
-  Result := FText <= FLast;
-  if ARaiseOnEnd and (not Result) then
+  Result := NewJSONObject();
+  SkipSpaces();
+  if FText^ = '{' then
   begin
-    RaiseEndOfData();
+    NextChar();
   end;
-end;
-function TJSONReader.NextChar(ARaiseOnEnd: Boolean): Boolean;
-begin
-  Inc(FText, 1);
-  Result := FText <= FLast;
-  if ARaiseOnEnd and (not Result) then
+  while (FText <= FLast) and (FText^ <> '}') do
   begin
-    RaiseEndOfData();
+    SkipSpaces();
+    key := GetString();
+    SkipSpaces();
+    if FText^ = ':' then
+    begin
+      Inc(FText);
+      SkipSpaces();
+      case GetType() of
+        jtObject: Result.Put(key, GetObject());
+        jtArray: Result.Put(key, GetArray());
+        jtString: Result.Put(key, GetString());
+      else
+        begin
+          if IsNull() then
+          begin
+            Result.Put(key);
+            NextChar(SNULL_LENGTH);
+          end
+          else
+          if IsBoolean(bol) then
+          begin
+            Result.Put(key, bol);
+            NextChar(SBOOL_LENGTH[bol]);
+          end
+          else
+          begin
+            val := GetValue();
+            if IsInteger(val, int) then
+              Result.Put(key, int)
+            else
+            if IsDouble(val, ext) then
+              Result.Put(key, ext)
+            else
+              RaiseUnknowValueType(val)
+          end;
+        end
+      end
+    end
+    else
+    begin
+      raise JSONException.CreateFmt('Not value for key: "%s"', [key]);
+    end;
+    SkipSpaces();
+    if FText^ = ',' then
+    begin
+      NextChar()
+    end
   end;
-end;
-{function TJSONReader.NextChar(ACount: Integer): Boolean;
-begin
-  Inc(FText, ACount);
-  Result := FText <= FLast;
-  if not Result then
-  begin
-    RaiseEndOfData();
-  end;
-end;}
-function TJSONReader.NextChar(): Boolean;
-begin
-  Inc(FText, 1);
-  Result := FText <= FLast;
-  if not Result then
-  begin
-    RaiseEndOfData();
-  end;
+  Inc(FText);
 end;
 
 function TJSONReader.readArray(const aText: string): IJSONArray;
@@ -433,7 +415,7 @@ begin
   else
   begin
     InitText(aText);
-    if SkipSpaces(False) then
+    if SkipSpacesNotRaise() then
     begin
       Result := GetArray();
     end
@@ -442,19 +424,6 @@ begin
       Result := NewJSONArray()
     end
   end
-end;
-
-function TJSONReader.SkipSpaces(ARaiseOnEnd: Boolean): Boolean;
-begin
-  while (FText^ <= ' ') and (FText <= FLast) do
-  begin
-    Inc(FText);
-  end;
-  Result := FText <= FLast;
-  if ARaiseOnEnd and (not Result) then
-  begin
-    RaiseEndOfData();
-  end;
 end;
 
 function TJSONReader.readObject(const aText: string): IJSONObject;
@@ -466,7 +435,7 @@ begin
   else
   begin
     InitText(aText);
-    if SkipSpaces(False) then
+    if SkipSpacesNotRaise then
     begin
       Result := GetObject();
     end

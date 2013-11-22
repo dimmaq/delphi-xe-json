@@ -64,6 +64,10 @@ begin
   jo := FIJSONReader.readObject('{"special":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf\/\/\/7\/\/9\/\/\/AP\/+AA\/\/\/\/\/+AAAB\/\/\/"}');
   s := jo.GetString('special');
   Check(s = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf///7//9///AP/+AA/////+AAAB///');
+
+  jo := FIJSONReader.readObject('{"special":"\"\\\/\b\f\n\r\t\""}');
+  s := jo.GetString('special');
+  Check(s = '"\/'#08#12#10#13#9'"');
 end;
 
 procedure TestIJSONReader.TestStringWithUnicode;

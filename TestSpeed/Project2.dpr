@@ -9,9 +9,9 @@ uses
   madLinkDisAsm,
   System.SysUtils,
   System.Diagnostics,
+  windows,
   ujson,
   json,
-  JSON.Reader2,
   ujson_test in 'ujson_test.pas';
 
 
@@ -33,36 +33,33 @@ uses
     json.GetInteger('credits');
   end;
 
-  procedure test3;
-  var json: IJSONObject;
-  begin
-    json := getJSONReader2.readObject(TEST_JSON);
-    json.GetInteger('credits');
-  end;
-
   procedure test(proc: TProcedure);
   var
-    j: Integer;
+    i, j: Integer;
     sw: TStopwatch;
   begin
-    sw := TStopwatch.StartNew;
-    for j := 1 to 1000 do
-      proc;
-    sw.Stop;
-    Writeln(sw.ElapsedMilliseconds);
+    for i := 1 to 7 do
+    begin
+      sw := TStopwatch.StartNew;
+      for j := 1 to 333 do
+        proc;
+      sw.Stop;
+      Write(sw.ElapsedMilliseconds, ', ');
+    end;
+    Writeln;
   end;
 
 begin
+//  SetPriorityClass(GetCurrentProcess, REALTIME_PRIORITY_CLASS);
   try
-    Write('old:');
-    test(test1);
-    Write('reader:');
-    test(test2);
-    Write('reader2:');
-    test(test3);
+//    Write('old: '); test(test1);
+    Write('new: '); test(test2);
+
+    WriteLn('Finish. "Enter" for exit...');
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
   end;
+//  SetPriorityClass(GetCurrentProcess, NORMAL_PRIORITY_CLASS);
   readln;
 end.
