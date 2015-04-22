@@ -208,6 +208,7 @@ type
     /// </summary>
     ///  <returns>a TArray&lt;string&gt; containing all keys</returns>
     function GetKeys : TArray<string>;
+    function GetValues : TArray<TValue>;
     /// <summary>
     ///   Gets the value for <paramref name="aKey"/>
     /// </summary>

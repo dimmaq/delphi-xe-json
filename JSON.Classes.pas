@@ -48,6 +48,7 @@ type
     function GetBoolean(const aKey: string; aDefault: boolean): boolean; overload;
     function GetDouble(const aKey: string; aDefault: double): double; overload;
     function GetKeys: TArray<string>;
+    function GetValues: TArray<TValue>;
     function GetValue(const aKey: string): TValue;
     function HasKey(const aKey: string): boolean;
     property Count : integer read GetCount;
@@ -89,6 +90,11 @@ type
   end;
 
 function NewJSONObject: IJSONObject;
+begin
+  result := TJSONObject.Create;
+end;
+
+function NewTJSONObject: TJSONObject;
 begin
   result := TJSONObject.Create;
 end;
@@ -199,6 +205,23 @@ begin
   begin
     setlength(result, length(result) + 1);
     result[high(result)] := s;
+  end;
+end;
+
+function TJSONObject.GetValues: TArray<TValue>;
+var
+  val: TValue;
+  l,k: Integer;
+begin
+  l := fValues.Count;
+  k := 0;
+  SetLength(Result, l);
+  for val in fValues.Values do
+  begin
+    if k > l then
+      raise Exception.Create('k > l; TJSONObject.GetValues');
+    Result[k] := val;
+    Inc(k)
   end;
 end;
 
