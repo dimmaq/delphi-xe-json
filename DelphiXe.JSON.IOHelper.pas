@@ -1,4 +1,4 @@
-unit JSON.IOHelper;
+unit DelphiXe.JSON.IOHelper;
 
 interface
 

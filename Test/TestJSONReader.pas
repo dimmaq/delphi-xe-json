@@ -3,7 +3,7 @@
 interface
 
 uses
-  TestFramework, Generics.Collections, SysUtils, JSON.Reader;
+  TestFramework, Generics.Collections, SysUtils, DelphiXe.JSON.Reader;
 
 type
   // Testmethoden für Klasse IJSONReader
@@ -33,7 +33,7 @@ type
 implementation
 
 uses
-  JSON;
+  DelphiXe.JSON;
 
 procedure TestIJSONReader.SetUp;
 begin

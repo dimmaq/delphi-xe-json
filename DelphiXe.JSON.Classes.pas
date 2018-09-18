@@ -1,9 +1,9 @@
-unit JSON.Classes;
+unit DelphiXe.JSON.Classes;
 
 interface
 
 uses
-  JSON;
+  DelphiXe.JSON;
 
 function NewJSONObject: IJSONObject;
 function NewJSONArray: IJSONArray;
@@ -11,7 +11,9 @@ function NewJSONArray: IJSONArray;
 implementation
 
 uses
-  System.SysUtils, System.Rtti, Generics.Collections, System.TypInfo, JSON.Writer;
+  System.SysUtils, System.Rtti, Generics.Collections, System.TypInfo,
+  ///
+  DelphiXe.JSON.Writer;
 
 type
   TJSONObject = class(TInterfacedObject, IJSONObject)

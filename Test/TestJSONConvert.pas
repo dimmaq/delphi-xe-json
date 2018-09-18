@@ -12,7 +12,9 @@ unit TestJSONConvert;
 interface
 
 uses
-  TestFramework, JSON.Convert, Windows, JSON;
+  Windows, TestFramework,
+  //
+  DelphiXe.JSON.Convert, DelphiXe.JSON;
 
 type
   // Testmethoden für Klasse TJSONConvert

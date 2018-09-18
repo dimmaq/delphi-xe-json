@@ -3,7 +3,7 @@ unit TestJSONWriter;
 interface
 
 uses
-  TestFramework, JSON.Writer;
+  TestFramework, DelphiXe.JSON.Writer;
 
 type
   // Testmethoden für Klasse IJSONWriter
@@ -24,7 +24,7 @@ type
 implementation
 
 uses
-  JSON, JSON.Classes;
+  DelphiXe.JSON, DelphiXe.JSON.Classes;
 
 procedure TestIJSONWriter.SetUp;
 begin

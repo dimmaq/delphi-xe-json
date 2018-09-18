@@ -1,4 +1,4 @@
-unit JSON.PODO;
+unit DelphiXeJson.JSON.PODO;
 
 interface
 

@@ -12,7 +12,9 @@ unit TestJSONObject;
 interface
 
 uses
-  TestFramework, SysUtils, Rtti, JSON;
+  TestFramework, SysUtils, Rtti,
+  //
+  DelphiXe.JSON;
 
 type
   // Testmethoden für Klasse IJSONObject

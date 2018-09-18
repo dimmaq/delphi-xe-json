@@ -1,9 +1,9 @@
-unit JSON.Writer;
+unit DelphiXe.JSON.Writer;
 
 interface
 
 uses
-  JSON;
+  DelphiXe.JSON;
 
 type
   IJSONWriter = interface
@@ -20,7 +20,7 @@ uses
   System.Rtti,
   System.TypInfo,
   System.SysUtils,
-  JSON.IOHelper;
+  DelphiXe.JSON.IOHelper;
 
 const
   CrLf = #13#10;

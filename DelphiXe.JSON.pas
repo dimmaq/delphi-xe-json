@@ -1,4 +1,4 @@
-unit JSON;
+unit DelphiXe.JSON;
 
 interface
 
@@ -7,50 +7,51 @@ uses
 
 type
   IJSONArray = interface;
+
   IJSONObject = interface;
 
   IJSONObject = interface
-  ['{D00A665F-3CBB-4DDB-8300-FB8020DA564B}']
+    ['{D00A665F-3CBB-4DDB-8300-FB8020DA564B}']
     /// <summary>Converts the stored key-value-pairs to their string representation</summary>
     ///  <param name="aReadable">if set to true, the result will contain whitespace, so it can be read easily by humans</param>
     ///  <returns>the string representation of the IJSONObject</returns>
-    function ToString(aReadable : boolean = false) : string;
+    function ToString(aReadable: boolean = false): string;
     /// <summary>
     ///   returns true if the item is an IJSONObject
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
-    function isJSONObject(const aKey : string) : boolean;
+    function isJSONObject(const aKey: string): boolean;
     /// <summary>
     ///   returns true if the item is an IJSONArray
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
-    function isJSONArray(const aKey : string) : boolean;
+    function isJSONArray(const aKey: string): boolean;
     /// <summary>
     ///   returns true if the item is a string
     ///   returns false if not or if the key is not set
     ///  <param name="aKey">the key of the item</param>
     /// </summary>
-    function isString(const aKey : string) : boolean;
+    function isString(const aKey: string): boolean;
     /// <summary>
     ///   returns true if the item is an int64
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
-    function isInteger(const aKey : string) : boolean;
+    function isInteger(const aKey: string): boolean;
     /// <summary>
     ///   returns true if the item is a boolean
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
-    function isBoolean(const aKey : string) : boolean;
+    function isBoolean(const aKey: string): boolean;
     /// <summary>
     ///   returns true if the item is a double
     ///   returns false if not or if the key is not set
     /// </summary>
     ///  <param name="aKey">the key of the item</param>
-    function isDouble(const aKey : string) : boolean;
+    function isDouble(const aKey: string): boolean;
     /// <summary>
     ///  Stores the Value <paramref name="aValue"/> for the Key <paramref name="aKey"/>.
     ///  Overwrites the Value for the specified Key, if it is already set
@@ -157,7 +158,7 @@ type
     ///  <returns>the IJSONObject stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to IJSONObject</exception>
-    function GetJSONObject(const aKey: string; const aDefault : IJSONObject): IJSONObject; overload;
+    function GetJSONObject(const aKey: string; const aDefault: IJSONObject): IJSONObject; overload;
     /// <summary>
     ///   Gets the IJSONArray stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -166,7 +167,7 @@ type
     ///  <returns>the IJSONArray stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to IJSONArray</exception>
-    function GetJSONArray(const aKey: string; const aDefault : IJSONArray): IJSONArray; overload;
+    function GetJSONArray(const aKey: string; const aDefault: IJSONArray): IJSONArray; overload;
     /// <summary>
     ///   Gets the string stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -175,7 +176,7 @@ type
     ///  <returns>the string stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to string</exception>
-    function GetString(const aKey: string; const aDefault : string): string; overload;
+    function GetString(const aKey: string; const aDefault: string): string; overload;
     /// <summary>
     ///   Gets the int64 stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -184,7 +185,7 @@ type
     ///  <returns>the int64 stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to int64</exception>
-    function GetInteger(const aKey: string; aDefault : int64): int64; overload;
+    function GetInteger(const aKey: string; aDefault: int64): int64; overload;
     /// <summary>
     ///   Gets the boolean stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -193,7 +194,7 @@ type
     ///  <returns>the boolean stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to boolean</exception>
-    function GetBoolean(const aKey: string; aDefault : boolean): boolean; overload;
+    function GetBoolean(const aKey: string; aDefault: boolean): boolean; overload;
     /// <summary>
     ///   Gets the double stored for <paramref name="aKey"/> or <paramref name="aDefault"/> if the key is not found
     /// </summary>
@@ -202,30 +203,30 @@ type
     ///  <returns>the double stored for <paramref name="aKey"/></returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
     ///  <exception cref="EInvalidCast">raised when the stored item can''t be casted to double</exception>
-    function GetDouble(const aKey: string; aDefault : double): double; overload;
+    function GetDouble(const aKey: string; aDefault: double): double; overload;
     /// <summary>
     ///   Gets all keys, that are stored in this IJSONObject
     /// </summary>
     ///  <returns>a TArray&lt;string&gt; containing all keys</returns>
-    function GetKeys : TArray<string>;
-    function GetValues : TArray<TValue>;
+    function GetKeys: TArray<string>;
+    function GetValues: TArray<TValue>;
     /// <summary>
     ///   Gets the value for <paramref name="aKey"/>
     /// </summary>
     ///  <param name="aKey">The Key</param>
     ///  <returns>the raw TValue that is used to store the data</returns>
     ///  <exception cref="EListError">raised when <paramref name="aKey"/> is not found</exception>
-    function GetValue (const aKey : string) : TValue;
+    function GetValue(const aKey: string): TValue;
     /// <summary>
     ///   returns true if <paramref name="aKey"/> is found in the IJSONObject, otherwise returns false
     /// </summary>
     ///  <param name="aKey">The Key</param>
-    function HasKey(const aKey : string) : boolean;
-    function GetCount : integer;
+    function HasKey(const aKey: string): boolean;
+    function GetCount: integer;
     /// <summary>
     ///   Gets the count of Key-Value-Pairs in this IJSONObject
     /// </summary>
-    property Count : integer read GetCount;
+    property Count: integer read GetCount;
     /// <summary>
     ///   Removes all Key-Value-Pairs from this IJSONObject
     /// </summary>
@@ -234,18 +235,18 @@ type
     ///   Removes the Key-Value-Pair for <paramref name="aKey"/> from this IJSONObject
     /// </summary>
     ///  <param name="aKey">The Key</param>
-    procedure DeleteKey(const aKey : string);
+    procedure DeleteKey(const aKey: string);
   end;
 
   IJSONArray = interface
-  ['{B120D59A-1D00-469E-97CE-AE2A635A51ED}']
-    function ToString(aReadable : boolean = false) : string;
-    function isJSONObject(aIndex : integer) : boolean;
-    function isJSONArray(aIndex : integer) : boolean;
-    function isString(aIndex : integer) : boolean;
-    function isInteger(aIndex : integer) : boolean;
-    function isBoolean(aIndex : integer) : boolean;
-    function isDouble(aIndex : integer) : boolean;
+    ['{B120D59A-1D00-469E-97CE-AE2A635A51ED}']
+    function ToString(aReadable: boolean = false): string;
+    function isJSONObject(aIndex: integer): boolean;
+    function isJSONArray(aIndex: integer): boolean;
+    function isString(aIndex: integer): boolean;
+    function isInteger(aIndex: integer): boolean;
+    function isBoolean(aIndex: integer): boolean;
+    function isDouble(aIndex: integer): boolean;
     procedure Put(const aValue: string); overload;
     procedure Put(aValue: int64); overload;
     procedure Put(aValue: double); overload;
@@ -253,17 +254,17 @@ type
     procedure Put(const aValue: IJSONObject); overload;
     procedure Put(const aValue: IJSONArray); overload;
     procedure Put; overload;
-    function GetJSONObject(aIndex : integer): IJSONObject;
-    function GetJSONArray(aIndex : integer): IJSONArray;
-    function GetString(aIndex : integer): String;
-    function GetInteger(aIndex : integer): int64;
-    function GetBoolean(aIndex : integer): boolean;
-    function GetDouble(aIndex : integer): double;
-    function GetValue(aIndex : integer) : TValue;
-    function GetCount : integer;
-    property Count : integer read getCount;
+    function GetJSONObject(aIndex: integer): IJSONObject;
+    function GetJSONArray(aIndex: integer): IJSONArray;
+    function GetString(aIndex: integer): string;
+    function GetInteger(aIndex: integer): int64;
+    function GetBoolean(aIndex: integer): boolean;
+    function GetDouble(aIndex: integer): double;
+    function GetValue(aIndex: integer): TValue;
+    function GetCount: integer;
+    property Count: integer read getCount;
     procedure Clear;
-    procedure Delete(aIndex : integer);
+    procedure Delete(aIndex: integer);
   end;
 
   /// <summary>
@@ -277,33 +278,32 @@ type
     /// </summary>
     ///  <param name="aText">the Text that will be parsed</param>
     ///  <exception cref="JSONException">raised when invalid text is parsed</exception>
-    class function NewObject(const aText : string = '') : IJSONObject;
+    class function NewObject(const aText: string = ''): IJSONObject;
     /// <summary>
     ///   Parses <paramref name="aText"/> into a new IJSONArray. If <paramref name="aText"/> is empty, an empty IJSONArray is returned.
     /// </summary>
     ///  <param name="aText">the Text that will be parsed</param>
     ///  <exception cref="JSONException">raised when invalid text is parsed</exception>
-    class function NewArray(const aText : string = '') : IJSONArray;
+    class function NewArray(const aText: string = ''): IJSONArray;
     /// <summary>
     ///   Formats <paramref name="aText"/> to be human-readable without parsing it.
     /// </summary>
     ///  <param name="aText">the Text that will be formatted</param>
-    class function FormatJSON(const aText : string) : string;
-
+    class function FormatJSON(const aText: string): string;
   end;
 
-  JSONException = class (Exception);
-  
+  JSONException = class(Exception);
+
 implementation
 
 uses
-  JSON.Reader, JSON.Formatter;
+  DelphiXe.JSON.Reader, DelphiXe.JSON.Formatter;
 
 { TJSON }
 
 class function TJSON.FormatJSON(const aText: string): string;
 var
-  formatter : IJSONFormatter;
+  formatter: IJSONFormatter;
 begin
   formatter := getJSONFormatter;
   result := formatter.FormatJSON(aText);
@@ -311,7 +311,7 @@ end;
 
 class function TJSON.NewArray(const aText: string): IJSONArray;
 var
-  reader : IJSONReader;
+  reader: IJSONReader;
 begin
   reader := getJSONReader;
   result := reader.readArray(aText);
@@ -319,10 +319,11 @@ end;
 
 class function TJSON.NewObject(const aText: string): IJSONObject;
 var
-  reader : IJSONReader;
+  reader: IJSONReader;
 begin
   reader := getJSONReader;
   result := reader.readObject(aText);
 end;
 
 end.
+

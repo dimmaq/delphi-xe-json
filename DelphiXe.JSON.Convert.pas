@@ -1,9 +1,9 @@
-unit JSON.Convert;
+unit DelphiXe.JSON.Convert;
 
 interface
 
 uses
-  Windows, JSON;
+  Windows, DelphiXe.JSON;
 
 type
   TJSONConvert = class

@@ -1,9 +1,9 @@
-unit JSON.Reader;
+unit DelphiXe.JSON.Reader;
 
 interface
 
 uses
-  JSON;
+  DelphiXe.JSON;
 
 type
   IJSONReader = interface
@@ -18,7 +18,7 @@ implementation
 
 uses
   System.SysUtils, System.Rtti, Generics.Collections,
-  JSON.Classes, JSON.IOHelper;
+  DelphiXe.JSON.Classes, DelphiXe.JSON.IOHelper;
 
 type
   TJSONType = (jtString, jtInteger, jtDouble, jtBoolean, jtObject, jtArray, jtNull);

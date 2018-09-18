@@ -1,4 +1,4 @@
-unit JSON.Formatter;
+unit DelphiXe.JSON.Formatter;
 
 interface
 
@@ -16,7 +16,7 @@ uses
   Classes,
   Math,
   SysUtils,
-  JSON.IOHelper;
+  DelphiXe.JSON.IOHelper;
 
 type
   TJSONFormatter = class(TInterfacedObject, IJSONFormatter)
