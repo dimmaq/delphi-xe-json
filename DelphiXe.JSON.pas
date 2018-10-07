@@ -279,12 +279,14 @@ type
     ///  <param name="aText">the Text that will be parsed</param>
     ///  <exception cref="JSONException">raised when invalid text is parsed</exception>
     class function NewObject(const aText: string = ''): IJSONObject;
+    class function CreateObject(const AText: string; var AError: string): IJSONObject;
     /// <summary>
     ///   Parses <paramref name="aText"/> into a new IJSONArray. If <paramref name="aText"/> is empty, an empty IJSONArray is returned.
     /// </summary>
     ///  <param name="aText">the Text that will be parsed</param>
     ///  <exception cref="JSONException">raised when invalid text is parsed</exception>
     class function NewArray(const aText: string = ''): IJSONArray;
+    class function CreateArray(const AText: string; var AError: string): IJSONArray;
     /// <summary>
     ///   Formats <paramref name="aText"/> to be human-readable without parsing it.
     /// </summary>
@@ -300,6 +302,42 @@ uses
   DelphiXe.JSON.Reader, DelphiXe.JSON.Formatter;
 
 { TJSON }
+
+class function TJSON.CreateArray(const AText: string;
+  var AError: string): IJSONArray;
+begin
+  Result := nil;
+  AError := '';
+  try
+    Result := NewArray(AText);
+  except
+    on E: JSONException do
+    begin
+      AError := E.Message;
+      Result := nil
+    end
+    else
+      raise
+  end;
+end;
+
+class function TJSON.CreateObject(const AText: string;
+  var AError: string): IJSONObject;
+begin
+  Result := nil;
+  AError := '';
+  try
+    Result := NewObject(AText);
+  except
+    on E: JSONException do
+    begin
+      AError := E.Message;
+      Result := nil
+    end
+    else
+      raise
+  end;
+end;
 
 class function TJSON.FormatJSON(const aText: string): string;
 var
